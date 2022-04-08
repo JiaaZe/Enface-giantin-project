@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Data
+/jupyter_data/all/
+/jupyter_data/eval/
+/jupyter_data/tfrecord_new/
+/train_src/trian_log.xlsx
+/train_src/trian_log (version 1).xlsx
+
+.idea
