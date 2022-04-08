@@ -134,5 +134,6 @@ dmypy.json
 /jupyter_data/tfrecord_new/
 /train_src/trian_log.xlsx
 /train_src/trian_log (version 1).xlsx
+/train_log/
 
 .idea
