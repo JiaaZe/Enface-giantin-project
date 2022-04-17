@@ -2,13 +2,13 @@ import random
 
 import cv2
 import numpy as np
+import pandas as pd
 import tensorflow.keras.utils
 from matplotlib import pyplot as plt
 from patchify import patchify
 from read_roi import read_roi_zip
 import copy
 import math
-from tensorflow.python.keras.utils.generic_utils import Progbar
 
 from matplotlib.patches import Ellipse
 
@@ -407,7 +407,7 @@ def pred_to_mask(preds, num_patches_per_image, patch_size=(256, 256), patch_step
 
 
 def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_possibility_threshold,
-                   giantin_channel, rect_size=40, sub_list=None, show_plt=False):
+                   giantin_channel, rect_size=40, sub_list=None, show_plt=False, overlapping=True):
     """
     Check pred_masks' contours
     :param sub_list: Last time bgst value in each channel. None then first sub.
@@ -419,6 +419,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     :param giantin_possibility_threshold: threshold of mean possibility of one giantin
     :param rect_size:
     :param show_plt:
+    :param overlapping: giantin channel have overlapping with other channel
     :return:
     """
     x, y, w, h = cv2.boundingRect(contour)
@@ -612,17 +613,21 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                     sub = max(np.min(np.where(task_img > 0, task_img, np.inf)), 20)
                     continue
                 # Having overlapping area with giantin channel.
-                dilated_img = cv2.dilate(task_img, np.ones((3, 3)))
-                giantin_crop = copy_golgi[:, :, giantin_channel]
-                overlap = np.multiply(dilated_img, giantin_crop).sum()
-                if overlap > 0:
+                if have_overlapping:
+                    dilated_img = cv2.dilate(task_img, np.ones((3, 3)))
+                    giantin_crop = copy_golgi[:, :, giantin_channel]
+                    overlap = np.multiply(dilated_img, giantin_crop).sum()
+                    if overlap > 0:
+                        ret_flag = True
+                        break
+                    else:
+                        # no overlapping with giantin channel
+                        ret_flag = False
+                        reject_msg = "no contour in giantin channel."
+                        return copy_golgi, _, _, ret_flag, sub_list, reject_msg
+                else:
                     ret_flag = True
                     break
-                else:
-                    # on overlapping with giantin channel
-                    print("on overlapping with giantin channel")
-                    ret_flag = False
-                    return copy_golgi, _, _, ret_flag
 
             # old version
             # for i, contour in enumerate(contours):
