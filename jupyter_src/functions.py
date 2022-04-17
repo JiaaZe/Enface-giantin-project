@@ -422,16 +422,25 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     :param overlapping: giantin channel have overlapping with other channel
     :return:
     """
+    golgi_h, golgi_w, golgi_c = golgi_image.shape
     x, y, w, h = cv2.boundingRect(contour)
     max_size = max(w, h)
     if max_size >= rect_size:
         rect_size = (max_size // 10 + 1) * 10
     w_pad = rect_size - w
     h_pad = rect_size - h
-    new_x = x - math.ceil(w_pad / 2)
-    new_y = y - math.ceil(h_pad / 2)
-    crop_golgi = np.copy(golgi_image[new_y:new_y + rect_size, new_x:new_x + rect_size, :])
-    crop_mask = np.copy(pred_mask[new_y:new_y + rect_size, new_x:new_x + rect_size])
+    x0 = max(x - math.ceil(w_pad / 2), 0)
+    y0 = max(y - math.ceil(h_pad / 2), 0)
+    x1 = x0 + rect_size
+    y1 = y0 + rect_size
+    if x1 > golgi_w - 1:
+        rect_size = golgi_w - x0
+    if y1 > golgi_h - 1:
+        rect_size = golgi_h - y0
+    x1 = x0 + rect_size
+    y1 = y0 + rect_size
+    crop_golgi = np.copy(golgi_image[y0:y1, x0:x1, :])
+    crop_mask = np.copy(pred_mask[y0:y1, x0:x1])
     print(x, y)
     if show_plt:
         plt.figure(figsize=(15, 10))
