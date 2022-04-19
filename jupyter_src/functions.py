@@ -1040,6 +1040,7 @@ def cal_radial_mean_intensity(golgi_image):
         df["No. pixel"] = no_pixel
         df["total_intensity"] = total_intensity
         df["mean_intensity"] = df["total_intensity"] / df["No. pixel"]
+        df["normalized_mean_intensity"] = df["mean_intensity"] / df["mean_intensity"].max()
         df_list.append(df)
         print("chennel {} finished".format(c_))
     return df_list

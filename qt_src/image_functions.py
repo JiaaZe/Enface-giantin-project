@@ -651,6 +651,7 @@ def cal_radial_mean_intensity(golgi_image):
     mx, my = 349.5, 349.5
     h, w, c = golgi_image.shape
     df_list = []
+    radius_list = []
     for c_ in range(c):
         df = pd.DataFrame(columns=["No. pixel", "total_intensity", "mean_intensity"], index=range(0, 499))
         no_pixel = [0 for _ in range(499)]
@@ -664,6 +665,27 @@ def cal_radial_mean_intensity(golgi_image):
         df["No. pixel"] = no_pixel
         df["total_intensity"] = total_intensity
         df["mean_intensity"] = df["total_intensity"] / df["No. pixel"]
+        df["normalized_mean_intensity"] = df["mean_intensity"] / df["mean_intensity"].max()
         df_list.append(df)
+        radius = cal_radius(df)
+        radius_list.append(radius)
         print("chennel {} finished".format(c_))
-    return df_list
+    return df_list, radius_list
+
+
+def cal_radius(df):
+    v_peak = df["mean_intensity"].max()
+    r_peak = df["mean_intensity"].argmax()
+    FWHM = v_peak / 2
+    radius = 0
+    for i, cur_intensity in df["mean_intensity"][::-1].iteritems():
+        if i == r_peak:
+            break
+        pre_intensity = df["mean_intensity"].iloc[i - 1]
+        if pre_intensity >= FWHM >= cur_intensity:
+            if pre_intensity - FWHM >= FWHM - cur_intensity:
+                radius = i + 1
+            else:
+                radius = i
+            break
+    return radius
