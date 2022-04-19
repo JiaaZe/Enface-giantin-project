@@ -624,10 +624,10 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
             _, channel_mask = cv2.threshold(channel_mask, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             contours, _ = cv2.findContours(channel_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             num_contours = len(contours)
-            # sort by contour area
-            contours = sorted(contours, key=lambda x: cv2.contourArea(x))
             do_sub = False
             if c_ == giantin_channel:
+                # sort by contour area
+                contours = sorted(contours, key=lambda x: cv2.contourArea(x))
                 for i, contour in enumerate(contours):
                     if giantin_found:
                         # bgst to find inner circle.
@@ -774,14 +774,27 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                     return copy_golgi, _, _, ret_flag, sub_list, reject_msg
             else:
                 # Other channel
+                contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
+                max_area = 0
                 for i, contour in enumerate(contours):
                     c_x = contour[:, :, 0].reshape(-1, )
                     c_y = contour[:, :, 1].reshape(-1, )
                     if h - 1 in c_x or w - 1 in c_y or 0 in c_x or 0 in c_y:
-                        if num_contours == 1 or i == len(contours) - 1:
+                        if i == 0:
+                            # the largest one near the edge
                             do_sub = True
                             break
                         else:
+                            cv2.drawContours(task_img, contours, i, 0, -1)
+                            num_contours -= 1
+                            continue
+                    if i == 0:
+                        max_area = cv2.contourArea(contour)
+                    else:
+                        # clear small contours
+                        contour_area = cv2.contourArea(contour)
+                        if contour_area <= max_area * 0.2:
+                            # clear the small contours
                             cv2.drawContours(task_img, contours, i, 0, -1)
                             num_contours -= 1
                             continue
