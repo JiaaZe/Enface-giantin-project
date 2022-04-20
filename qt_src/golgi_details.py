@@ -1,12 +1,14 @@
+import logging
 import cv2
 import numpy as np
 import pandas as pd
 import sys
 
 from PyQt5.QtGui import QIntValidator, QMovie
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication, QLabel
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication, QLabel, QFileDialog
 from PyQt5.QtCore import pyqtSignal as Signal, QThread, QObject
 from PyQt5 import QtCore
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
 
@@ -20,8 +22,8 @@ class GolgiDetailWidget(QWidget):
     signal_backwork = Signal()
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
-    def __init__(self, window_name, logger=None, crop_golgi=None, mode=1, giantin_mask=None, giantin_pred=None,
-                 param_dict=None):
+    def __init__(self, window_name, logger: logging.Logger, crop_golgi=None,
+                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None):
         super().__init__()
         self.setObjectName(window_name)
         self.ui = Ui_Golgi_details()
@@ -89,118 +91,127 @@ class GolgiDetailWidget(QWidget):
         movie.start()
 
     def sub_handler(self, channel, sub_value, btn_ui):
-        if sub_value == "":
-            return
-        btn_ui.setDisabled(True)
+        try:
+            if sub_value == "":
+                return
+            btn_ui.setDisabled(True)
 
-        sub_value = int(sub_value)
-        new_crop = np.copy(self.crop_golgi)
-        new_mask = np.copy(self.crop_mask)
-        golgi_crop = new_crop[:, :, channel]
-        h, w = golgi_crop.shape
-        for i in range(h):
-            for j in range(w):
-                if golgi_crop[i][j] > sub_value:
-                    golgi_crop[i][j] = golgi_crop[i][j] - sub_value
-                else:
-                    golgi_crop[i][j] = 0
+            sub_value = int(sub_value)
+            new_crop = np.copy(self.crop_golgi)
+            new_mask = np.copy(self.crop_mask)
+            golgi_crop = new_crop[:, :, channel]
+            h, w = golgi_crop.shape
+            for i in range(h):
+                for j in range(w):
+                    if golgi_crop[i][j] > sub_value:
+                        golgi_crop[i][j] = golgi_crop[i][j] - sub_value
+                    else:
+                        golgi_crop[i][j] = 0
 
-        mask = golgi_crop / (golgi_crop + 1) * 255
-        mask = mask.astype(np.bool_)
-        new_mask[:, :, channel] = mask
+            mask = golgi_crop / (golgi_crop + 1) * 255
+            mask = mask.astype(np.bool_)
+            new_mask[:, :, channel] = mask
 
-        self.new_crop_golgi = new_crop
-        self.show_golgi_details(new_crop, new_mask)
-        btn_ui.setEnabled(True)
-        self.ui.btn_check.setEnabled(True)
+            self.new_crop_golgi = new_crop
+            self.show_golgi_details(new_crop, new_mask)
+            btn_ui.setEnabled(True)
+            self.ui.btn_check.setEnabled(True)
+        except Exception as e:
+            self.logger.error("Error when do subtraction:{}".format(e))
 
     def check_handler(self):
-        target_size = 701
-        centroid = (350, 350)
-        sub_list = None
-        rect_size = self.new_crop_golgi.shape[0]
-        for _ in range(2):
-            crop_golgi = self.new_crop_golgi[:rect_size, :rect_size]
-            pred = self.giantin_pred[:rect_size, :rect_size]
-            golgi, mask, contour, flag, sub_list, rej_msg = check_golgi_crop(crop_golgi,
-                                                                             pred,
-                                                                             giantin_channel=self.giantin_channel,
-                                                                             blank_channel=self.blank_channel,
-                                                                             sub_list=sub_list,
-                                                                             min_giantin_area=self.min_giantin_area,
-                                                                             giantin_possibility_threshold=
-                                                                             self.giantin_possibility_threshold,
-                                                                             have_overlapping=self.overlapping)
-            if flag:
-                crop_giantin = golgi[:, :, self.giantin_channel]
-                mx, my = cal_center_of_mass(crop_giantin, contour)
-                gyradius = cal_gyradius(crop_giantin, mx, my)
-                if rect_size > gyradius * target_size / 100:
-                    rect_size = int(gyradius * target_size / 100)
-                    print("new rect_size: {}".format(rect_size))
-                    continue
-                else:
-                    new_size = [int(size * 100 / gyradius) for size in crop_giantin.shape]
-                    resized_golgi = cv2.resize(golgi, new_size, interpolation=cv2.INTER_LINEAR)
-                    normalized_golgi = normalize_total_intensity(resized_golgi, target_total_intensity=200000000)
-                    shifted_golgi = shift_make_border(normalized_golgi, giantin_channel=self.giantin_channel,
-                                                      border_size=(target_size, target_size),
-                                                      center_coord=centroid, shift_to_imageJ=True)
-                    self.new_shifted_golgi = shifted_golgi
-                    self.new_crop_golgi = golgi
-                    self.new_giantin_mask = mask
-                    self.new_giantin_pred = pred
-                    self.ui.btn_save.setEnabled(True)
+        try:
+            target_size = 701
+            centroid = (350, 350)
+            sub_list = None
+            rect_size = self.new_crop_golgi.shape[0]
+            for _ in range(2):
+                crop_golgi = self.new_crop_golgi[:rect_size, :rect_size]
+                pred = self.giantin_pred[:rect_size, :rect_size]
+                golgi, mask, contour, flag, sub_list, rej_msg = check_golgi_crop(crop_golgi,
+                                                                                 pred,
+                                                                                 giantin_channel=self.giantin_channel,
+                                                                                 blank_channel=self.blank_channel,
+                                                                                 sub_list=sub_list,
+                                                                                 min_giantin_area=self.min_giantin_area,
+                                                                                 giantin_possibility_threshold=
+                                                                                 self.giantin_possibility_threshold,
+                                                                                 have_overlapping=self.overlapping)
+                if flag:
+                    crop_giantin = golgi[:, :, self.giantin_channel]
+                    mx, my = cal_center_of_mass(crop_giantin, contour)
+                    gyradius = cal_gyradius(crop_giantin, mx, my)
+                    if rect_size > gyradius * target_size / 100:
+                        rect_size = int(gyradius * target_size / 100)
+                        print("new rect_size: {}".format(rect_size))
+                        continue
+                    else:
+                        new_size = [int(size * 100 / gyradius) for size in crop_giantin.shape]
+                        resized_golgi = cv2.resize(golgi, new_size, interpolation=cv2.INTER_LINEAR)
+                        normalized_golgi = normalize_total_intensity(resized_golgi, target_total_intensity=200000000)
+                        shifted_golgi = shift_make_border(normalized_golgi, giantin_channel=self.giantin_channel,
+                                                          border_size=(target_size, target_size),
+                                                          center_coord=centroid, shift_to_imageJ=True)
+                        self.new_shifted_golgi = shifted_golgi
+                        self.new_crop_golgi = golgi
+                        self.new_giantin_mask = mask
+                        self.new_giantin_pred = pred
+                        self.ui.btn_save.setEnabled(True)
 
-                    # show result after check
-                    self.crop_golgi = golgi
-                    self.show_golgi_details(self.crop_golgi, None)
+                        # show result after check
+                        self.crop_golgi = golgi
+                        self.show_golgi_details(self.crop_golgi, None)
+                        break
+                else:
+                    self.logger.info(rej_msg)
                     break
-            else:
-                self.logger.info(rej_msg)
-                break
+        except Exception as e:
+            self.logger.error("Error when check single golgi mini-stacks:{}".format(e))
 
     def get_new_data(self):
         return self.new_crop_golgi, self.new_shifted_golgi, self.new_giantin_mask, self.new_giantin_pred
 
     def show_golgi_details(self, crop_golgi, masks):
-        if masks is None:
-            self.crop_mask = self.crop_golgi / (self.crop_golgi + 1) * 255
-            self.crop_mask = self.crop_mask.astype(np.bool_)
-            masks = self.crop_mask
-        num_channel = crop_golgi.shape[-1]
-        columns = num_channel
-        rows = 2
-        static_canvas = FigureCanvas(Figure(figsize=(2 * columns, 0.8 * rows)))
-        subplot_axes = static_canvas.figure.subplots(rows, columns)
-        static_canvas.figure.tight_layout(pad=0.6)
-        # static_canvas.figure.subplots_adjust(wspace=0.4)
-        font_size = 9
-        for j in range(num_channel):
-            for i in range(2):
-                if i == 0:
-                    img = crop_golgi[:, :, j]
-                    title = "Channel"
-                else:
-                    img = masks[:, :, j]
-                    title = "Mask"
-                axes = subplot_axes[i][j]
-                for label in (axes.get_xticklabels() + axes.get_yticklabels()):
-                    label.set_fontsize(font_size)
+        try:
+            if masks is None:
+                self.crop_mask = self.crop_golgi / (self.crop_golgi + 1) * 255
+                self.crop_mask = self.crop_mask.astype(np.bool_)
+                masks = self.crop_mask
+            num_channel = crop_golgi.shape[-1]
+            columns = num_channel
+            rows = 2
+            static_canvas = FigureCanvas(Figure(figsize=(2 * columns, 0.8 * rows)))
+            subplot_axes = static_canvas.figure.subplots(rows, columns)
+            static_canvas.figure.tight_layout(pad=0.6)
+            # static_canvas.figure.subplots_adjust(wspace=0.4)
+            font_size = 9
+            for j in range(num_channel):
+                for i in range(2):
+                    if i == 0:
+                        img = crop_golgi[:, :, j]
+                        title = "Channel"
+                    else:
+                        img = masks[:, :, j]
+                        title = "Mask"
+                    axes = subplot_axes[i][j]
+                    for label in (axes.get_xticklabels() + axes.get_yticklabels()):
+                        label.set_fontsize(font_size)
 
-                img_ = axes.imshow(img)
-                cbar = static_canvas.figure.colorbar(img_, ax=axes)
-                for t in cbar.ax.get_yticklabels():
-                    t.set_fontsize(font_size)
-                if i == 1:
-                    # mask color bar label -> [0,1]
-                    # cbar.ax.set_yticklabels([0, 1])
-                    cbar.set_ticks([0, 1])
-                if j == self.giantin_channel:
-                    axes.set_title("Giantin " + title)
-                else:
-                    axes.set_title("C{} ".format(j + 1) + title)
-        self.plot_widget(static_canvas)
+                    img_ = axes.imshow(img)
+                    cbar = static_canvas.figure.colorbar(img_, ax=axes)
+                    for t in cbar.ax.get_yticklabels():
+                        t.set_fontsize(font_size)
+                    if i == 1:
+                        # mask color bar label -> [0,1]
+                        # cbar.ax.set_yticklabels([0, 1])
+                        cbar.set_ticks([0, 1])
+                    if j == self.giantin_channel:
+                        axes.set_title("Giantin " + title)
+                    else:
+                        axes.set_title("C{} ".format(j + 1) + title)
+            self.plot_widget(static_canvas)
+        except Exception as e:
+            self.logger.error("Error when show golgi mini-stacks details:{}".format(e))
 
     # for averaged data
     def hide_widget_for_averaged(self):
@@ -224,9 +235,10 @@ class GolgiDetailWidget(QWidget):
             self.ui.golgi_content_widget.setLayout(plotLayout)
         else:
             cur_item = plotLayout.itemAt(0)
-            cur_widget = cur_item.widget()
-            if cur_widget is not None:
-                plotLayout.replaceWidget(cur_widget, canvas)
+            if cur_item is not None:
+                cur_widget = cur_item.widget()
+                if cur_widget is not None:
+                    plotLayout.replaceWidget(cur_widget, canvas)
 
     def show_averaged_w_plot(self, averaged_golgi):
         self.thread = QThread()
@@ -239,63 +251,86 @@ class GolgiDetailWidget(QWidget):
         self.signal_backwork.emit()
 
     def backwork_finished_handler(self, crop_data):
-        num_channel = crop_data.shape[-1]
-        columns = num_channel + 1
-        rows = 2
-        static_canvas = FigureCanvas(Figure(figsize=(3 * columns, 1 * rows)))
-        subplot_axes = static_canvas.figure.subplots(rows, columns)
-        static_canvas.figure.tight_layout(pad=0.6)
+        try:
+            num_channel = crop_data.shape[-1]
+            columns = num_channel + 1
+            rows = 2
+            static_canvas = FigureCanvas(Figure(figsize=(3 * columns, 1 * rows)))
+            subplot_axes = static_canvas.figure.subplots(rows, columns)
+            static_canvas.figure.tight_layout(pad=0.6)
 
-        golgi_x_axis_labels = np.arange(0, 701, 350)
-        golgi_y_axis_labels = np.arange(700, -1, -350)
-        font_size = 9
+            golgi_x_axis_labels = np.arange(0, 701, 350)
+            golgi_y_axis_labels = np.arange(700, -1, -350)
+            font_size = 9
 
-        # get plot data
-        self.radial_mean_intensity_df_list, self.radius_list = self.backwork.get_data()
+            # get plot data
+            self.radial_mean_intensity_df_list, self.radius_list = self.backwork.get_data()
 
-        for j in range(columns - 1):
-            # show golgi
-            golgi_axes = subplot_axes[0][j]
-            golgi_axes.set_title("Channel {}".format(j + 1))
-            img_ = golgi_axes.imshow(crop_data[:, :, j])
-            cbar = static_canvas.figure.colorbar(img_, ax=golgi_axes)
+            for j in range(columns - 1):
+                # show golgi
+                golgi_axes = subplot_axes[0][j]
+                golgi_axes.set_title("Channel {}".format(j + 1))
+                img_ = golgi_axes.imshow(crop_data[:, :, j])
+                cbar = static_canvas.figure.colorbar(img_, ax=golgi_axes)
 
-            golgi_axes.set_xlim(np.min(golgi_x_axis_labels), np.max(golgi_x_axis_labels))
-            golgi_axes.set_ylim(np.max(golgi_y_axis_labels), np.min(golgi_y_axis_labels))
-            golgi_axes.set_xticks(golgi_x_axis_labels)
-            golgi_axes.set_yticks(golgi_y_axis_labels)
+                golgi_axes.set_xlim(np.min(golgi_x_axis_labels), np.max(golgi_x_axis_labels))
+                golgi_axes.set_ylim(np.max(golgi_y_axis_labels), np.min(golgi_y_axis_labels))
+                golgi_axes.set_xticks(golgi_x_axis_labels)
+                golgi_axes.set_yticks(golgi_y_axis_labels)
 
-            for t in cbar.ax.get_yticklabels():
-                t.set_fontsize(font_size)
+                for t in cbar.ax.get_yticklabels():
+                    t.set_fontsize(font_size)
 
-            for label in (golgi_axes.get_xticklabels() + golgi_axes.get_yticklabels()):
-                label.set_fontsize(font_size)
+                for label in (golgi_axes.get_xticklabels() + golgi_axes.get_yticklabels()):
+                    label.set_fontsize(font_size)
 
-            # show plot
-            plot_axes = subplot_axes[1][j]
-            plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
-            for label in (plot_axes.get_xticklabels() + plot_axes.get_yticklabels()):
-                label.set_fontsize(font_size)
+                # show plot
+                plot_axes = subplot_axes[1][j]
+                plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
+                for label in (plot_axes.get_xticklabels() + plot_axes.get_yticklabels()):
+                    label.set_fontsize(font_size)
 
-        subplot_axes[0][-1].set_title("Merge")
-        merge_img = crop_data / np.amax(crop_data, axis=(0, 1))
-        subplot_axes[0][-1].imshow(merge_img)
+            subplot_axes[0][-1].set_title("Merge")
+            merge_img = crop_data / np.amax(crop_data, axis=(0, 1))
+            subplot_axes[0][-1].imshow(merge_img)
 
-        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[0]["normalized_mean_intensity"])
-        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[1]["normalized_mean_intensity"])
-        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[2]["normalized_mean_intensity"])
+            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[0]["normalized_mean_intensity"])
+            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[1]["normalized_mean_intensity"])
+            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[2]["normalized_mean_intensity"])
 
-        for axes in subplot_axes[1]:
-            axes.set_xlabel("Distance from center")
-            axes.set_ylabel("Radial mean intensity")
+            for axes in subplot_axes[1]:
+                axes.set_xlabel("Distance from center")
+                axes.set_ylabel("Radial mean intensity")
 
-        self.plot_widget(static_canvas)
+            self.plot_widget(static_canvas)
+        except Exception as e:
+            self.logger.error("Error when plot the averaged plot:{}".format(e))
 
     def save_averaged_result(self):
-        ...
+        try:
+            plotLayout = self.ui.golgi_content_widget.layout()
+            canvas = plotLayout.itemAt(0).widget()
+            save_path, save_type = QFileDialog.getSaveFileName(self, "Save File", "averaged_plot",
+                                                               filter='pdf (*.pdf);; png (*.png);;jpg (*.jpg)')
+            if save_type == "pdf (*.pdf)":
+                with PdfPages(save_path) as pdf:
+                    pdf.savefig(canvas.figure, dpi=120)
+            else:
+                canvas.figure.savefig(save_path)
+        except Exception as e:
+            self.logger.error("Error when save averaged plot: {}".format(e))
 
     def export_averaged_result(self):
-        ...
+        try:
+            save_path, _ = QFileDialog.getSaveFileName(self, "Save File", "radial mean intensity",
+                                                       filter='xlsx (*.xlsx)')
+
+            excel_writer = pd.ExcelWriter(save_path)
+            for i, df in enumerate(self.radial_mean_intensity_df_list):
+                df.to_excel(excel_writer, sheet_name="C{}".format(i + 1))
+            excel_writer.save()
+        except Exception as e:
+            self.logger.error("Error when export averaged result: {}".format(e))
 
 
 class Backwork(QObject):
@@ -320,8 +355,9 @@ if __name__ == '__main__':
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
-                               param_dict=param_dict)
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
+    window.show_averaged_w_plot(np.dstack([data, data, data]))
+    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
+    #                            param_dict=param_dict)
     window.show()
     sys.exit(app.exec())
