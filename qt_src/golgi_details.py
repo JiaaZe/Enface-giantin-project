@@ -3,9 +3,10 @@ import numpy as np
 import pandas as pd
 import sys
 
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication
-from PyQt5.QtCore import pyqtSignal as Signal
+from PyQt5.QtGui import QIntValidator, QMovie
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication, QLabel
+from PyQt5.QtCore import pyqtSignal as Signal, QThread, QObject
+from PyQt5 import QtCore
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
 
@@ -67,7 +68,19 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_save.setText("Save plots")
             self.hide_widget_for_averaged()
             self.ui.btn_save.clicked.connect(lambda: self.save_averaged_result())
-            # self.show_averaged_w_plot(self.crop_golgi)
+            self.ui.btn_export.clicked.connect(lambda: self.export_averaged_result())
+            self.show_loading()
+
+    def show_loading(self):
+        layout = QVBoxLayout(self.ui.golgi_content_widget)
+        label = QLabel(self.ui.golgi_content_widget)
+        label.setStyleSheet("background: white;border: 0px")
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setObjectName("label")
+        layout.addWidget(label)
+        movie = QMovie("../qt_ui/loading.gif")
+        label.setMovie(movie)
+        movie.start()
 
     def sub_handler(self, channel, sub_value, btn_ui):
         if sub_value == "":
