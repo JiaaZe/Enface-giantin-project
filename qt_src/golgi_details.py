@@ -209,6 +209,19 @@ class GolgiDetailWidget(QWidget):
         self.ui.label_c3.setVisible(False)
         self.ui.btn_check.setVisible(False)
 
+    def plot_widget(self, canvas):
+        plotLayout = self.ui.golgi_content_widget.layout()
+        if plotLayout is None:
+            plotLayout = QVBoxLayout()
+            plotLayout.setContentsMargins(2, 2, 2, 2)
+            plotLayout.addWidget(canvas)
+            self.ui.golgi_content_widget.setLayout(plotLayout)
+        else:
+            cur_item = plotLayout.itemAt(0)
+            cur_widget = cur_item.widget()
+            if cur_widget is not None:
+                plotLayout.replaceWidget(cur_widget, canvas)
+
     def show_averaged_w_plot(self, averaged_golgi):
         self.thread = QThread()
 
