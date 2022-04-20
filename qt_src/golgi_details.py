@@ -75,6 +75,8 @@ class GolgiDetailWidget(QWidget):
         elif self.mode == 2:
             self.ui.btn_save.setText("Save plots")
             self.hide_widget_for_averaged()
+            self.ui.btn_save.setDisabled(True)
+            self.ui.btn_export.setDisabled(True)
             self.ui.btn_save.clicked.connect(lambda: self.save_averaged_result())
             self.ui.btn_export.clicked.connect(lambda: self.export_averaged_result())
             self.show_loading()
@@ -303,6 +305,8 @@ class GolgiDetailWidget(QWidget):
                 axes.set_ylabel("Radial mean intensity")
 
             self.plot_widget(static_canvas)
+            self.ui.btn_save.setEnabled(True)
+            self.ui.btn_export.setEnabled(True)
         except Exception as e:
             self.logger.error("Error when plot the averaged plot:{}".format(e))
 
