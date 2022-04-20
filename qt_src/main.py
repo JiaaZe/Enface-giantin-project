@@ -355,7 +355,6 @@ class MainWindow(QMainWindow):
         print(self.selected_list)
 
     def show_golgi(self):
-
         # clear old plot
         self.ui.scroll_golgi_content = QWidget()
         self.ui.scroll_golgi.setWidget(self.ui.scroll_golgi_content)
@@ -396,9 +395,14 @@ class MainWindow(QMainWindow):
                 cbar = static_canvas.figure.colorbar(img_, ax=axes)
                 for t in cbar.ax.get_yticklabels():
                     t.set_fontsize(font_size)
-
+                if i in self.selected_list:
+                    # keep original selected
+                    ax_h, ax_w = 701, 701
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
         self.axes_dict = axes_dict
 
+        static_canvas.draw()
         plotLayout = QVBoxLayout()
         plotLayout.addWidget(static_canvas)
         qfigWidget.setLayout(plotLayout)

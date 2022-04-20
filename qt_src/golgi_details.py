@@ -294,11 +294,14 @@ class GolgiDetailWidget(QWidget):
 
             subplot_axes[0][-1].set_title("Merge")
             merge_img = crop_data / np.amax(crop_data, axis=(0, 1))
+            if num_channel < 3:
+                empty_shape = merge_img.shape[:2] + (3 - num_channel,)
+                empty_img = np.zeros(shape=empty_shape)
+                merge_img = np.dstack([merge_img, empty_img])
             subplot_axes[0][-1].imshow(merge_img)
 
-            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[0]["normalized_mean_intensity"])
-            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[1]["normalized_mean_intensity"])
-            subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[2]["normalized_mean_intensity"])
+            for k in range(num_channel):
+                subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[k]["normalized_mean_intensity"])
 
             for axes in subplot_axes[1]:
                 axes.set_xlabel("Distance from center")
@@ -360,7 +363,7 @@ if __name__ == '__main__':
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
     window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
-    window.show_averaged_w_plot(np.dstack([data, data, data]))
+    window.show_averaged_w_plot(np.dstack([data, data]))
     # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
     #                            param_dict=param_dict)
     window.show()
