@@ -69,29 +69,32 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_save.clicked.connect(lambda: self.save_averaged_result())
             # self.show_averaged_w_plot(self.crop_golgi)
 
-    def sub_handler(self):
-        if self.ui.sub_value.text() == "":
+    def sub_handler(self, channel, sub_value, btn_ui):
+        if sub_value == "":
             return
-        self.ui.btn_sub.setDisabled(True)
+        btn_ui.setDisabled(True)
 
-        sub_value = int(self.ui.sub_value.text())
+        sub_value = int(sub_value)
         new_crop = np.copy(self.crop_golgi)
-        giantin_crop = new_crop[:, :, self.giantin_channel]
-        h, w = giantin_crop.shape
+        golgi_crop = new_crop[:, :, channel]
+        h, w = golgi_crop.shape
         for i in range(h):
             for j in range(w):
-                if giantin_crop[i][j] > sub_value:
-                    giantin_crop[i][j] = giantin_crop[i][j] - sub_value
+                if golgi_crop[i][j] > sub_value:
+                    golgi_crop[i][j] = golgi_crop[i][j] - sub_value
                 else:
-                    giantin_crop[i][j] = 0
+                    golgi_crop[i][j] = 0
 
-        giantin_mask = giantin_crop / (giantin_crop + 1) * 255
-        giantin_mask = giantin_mask.astype(np.bool_)
+        mask = golgi_crop / (golgi_crop + 1) * 255
+        mask = mask.astype(np.bool_)
 
         self.new_crop_golgi = new_crop
-
-        self.show_img(new_crop, giantin_mask)
-        self.ui.btn_sub.setEnabled(True)
+        if channel == self.giantin_channel:
+            title = "Giantin Mask"
+        else:
+            title = "C{} Mask".format(channel + 1)
+        self.show_img(new_crop, mask, title)
+        btn_ui.setEnabled(True)
         self.ui.btn_check.setEnabled(True)
 
     def check_handler(self):
@@ -139,14 +142,14 @@ class GolgiDetailWidget(QWidget):
     def get_new_data(self):
         return self.new_crop_golgi, self.new_shifted_golgi, self.new_giantin_mask, self.new_giantin_pred
 
-    def show_img(self, crop_golgi, giantin_mask):
+    def show_img(self, crop_golgi, mask, mask_title="Giantin Mask"):
         num_channel = crop_golgi.shape[-1]
         columns = num_channel + 1
         rows = 1
         static_canvas = FigureCanvas(Figure(figsize=(2 * columns, 0.8 * rows)))
         subplot_axes = static_canvas.figure.subplots(1, (num_channel + 1))
-        static_canvas.figure.tight_layout()
-        static_canvas.figure.subplots_adjust(wspace=0.4)
+        static_canvas.figure.tight_layout(h_pad=0, w_pad=0.5)
+        # static_canvas.figure.subplots_adjust(wspace=0.4)
         font_size = 9
         for i, axes in enumerate(subplot_axes.reshape(-1)):
             for label in (axes.get_xticklabels() + axes.get_yticklabels()):
@@ -154,12 +157,12 @@ class GolgiDetailWidget(QWidget):
 
             if i == num_channel:
                 # show mask
-                axes.set_title("Giantin mask")
-                img_ = axes.imshow(giantin_mask)
+                axes.set_title(mask_title)
+                img_ = axes.imshow(mask)
                 cbar = static_canvas.figure.colorbar(img_, ax=axes)
             else:
                 img = crop_golgi[:, :, i]
-                axes.set_title("Channel {}".format(i + 1))
+                axes.set_title(mask_title)
                 img_ = axes.imshow(img)
                 cbar = static_canvas.figure.colorbar(img_, ax=axes)
             for t in cbar.ax.get_yticklabels():
