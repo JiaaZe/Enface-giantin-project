@@ -17,6 +17,7 @@ from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, 
 
 class GolgiDetailWidget(QWidget):
     save_signal = Signal(int)
+    signal_backwork = Signal()
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
     def __init__(self, window_name, crop_golgi=None, mode=1, giantin_mask=None, giantin_pred=None, param_dict=None):
@@ -25,6 +26,11 @@ class GolgiDetailWidget(QWidget):
         self.ui = Ui_Golgi_details()
         self.ui.setupUi(self)
         self.mode = mode
+
+        self.radial_mean_intensity_df_list = None
+        self.radius_list = None
+        self.thread = None
+        self.backwork = None
 
         self.crop_golgi = crop_golgi
         if self.mode == 1:
@@ -206,7 +212,17 @@ class GolgiDetailWidget(QWidget):
         self.ui.btn_check.setVisible(False)
 
     def show_averaged_w_plot(self, averaged_golgi):
-        num_channel = averaged_golgi.shape[-1]
+        self.thread = QThread()
+
+        self.backwork = Backwork(averaged_golgi)
+        self.backwork.moveToThread(self.thread)
+        self.backwork.finished_signal.connect(lambda: self.backwork_finished_handler(averaged_golgi))
+        self.signal_backwork.connect(self.backwork.cal)
+        self.thread.start()
+        self.signal_backwork.emit()
+
+    def backwork_finished_handler(self, crop_data):
+        num_channel = crop_data.shape[-1]
         columns = num_channel + 1
         rows = 2
         static_canvas = FigureCanvas(Figure(figsize=(3 * columns, 1 * rows)))
@@ -218,13 +234,13 @@ class GolgiDetailWidget(QWidget):
         font_size = 9
 
         # get plot data
-        radial_mean_intensity_df_list, radius_list = cal_radial_mean_intensity(averaged_golgi)
+        self.radial_mean_intensity_df_list, self.radius_list = self.backwork.get_data()
 
         for j in range(columns - 1):
             # show golgi
             golgi_axes = subplot_axes[0][j]
             golgi_axes.set_title("Channel {}".format(j + 1))
-            img_ = golgi_axes.imshow(averaged_golgi[:, :, j])
+            img_ = golgi_axes.imshow(crop_data[:, :, j])
             cbar = static_canvas.figure.colorbar(img_, ax=golgi_axes)
 
             golgi_axes.set_xlim(np.min(golgi_x_axis_labels), np.max(golgi_x_axis_labels))
@@ -240,17 +256,17 @@ class GolgiDetailWidget(QWidget):
 
             # show plot
             plot_axes = subplot_axes[1][j]
-            plot_axes.plot(radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
+            plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
             for label in (plot_axes.get_xticklabels() + plot_axes.get_yticklabels()):
                 label.set_fontsize(font_size)
 
         subplot_axes[0][-1].set_title("Merge")
-        merge_img = averaged_golgi / np.amax(averaged_golgi, axis=(0, 1))
+        merge_img = crop_data / np.amax(crop_data, axis=(0, 1))
         subplot_axes[0][-1].imshow(merge_img)
 
-        subplot_axes[1][-1].plot(radial_mean_intensity_df_list[0]["normalized_mean_intensity"])
-        subplot_axes[1][-1].plot(radial_mean_intensity_df_list[1]["normalized_mean_intensity"])
-        subplot_axes[1][-1].plot(radial_mean_intensity_df_list[2]["normalized_mean_intensity"])
+        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[0]["normalized_mean_intensity"])
+        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[1]["normalized_mean_intensity"])
+        subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[2]["normalized_mean_intensity"])
 
         for axes in subplot_axes[1]:
             axes.set_xlabel("Distance from center")
@@ -264,14 +280,34 @@ class GolgiDetailWidget(QWidget):
     def save_averaged_result(self):
         ...
 
+    def export_averaged_result(self):
+        ...
+
+
+class Backwork(QObject):
+    finished_signal = Signal()
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+        self.radial_mean_intensity_df_list = []
+        self.radius_list = []
+
+    def cal(self):
+        self.radial_mean_intensity_df_list, self.radius_list = cal_radial_mean_intensity(self.data)
+        self.finished_signal.emit()
+
+    def get_data(self):
+        return self.radial_mean_intensity_df_list, self.radius_list
+
 
 if __name__ == '__main__':
     param_dict = {"param_giantin_area_threshold": 150, "param_giantin_threshold": 0.6, "param_giantin_overlap": True,
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
-                               param_dict=param_dict)
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
+    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
+    #                            param_dict=param_dict)
     window.show()
     sys.exit(app.exec())
