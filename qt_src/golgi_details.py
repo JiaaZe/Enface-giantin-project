@@ -17,7 +17,8 @@ from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, 
 class GolgiDetailWidget(QWidget):
     save_signal = Signal(int)
 
-    def __init__(self, crop_golgi, giantin_mask, giantin_pred, param_dict):
+    # mode: 1 for golgi details. 2 for dispaly averaged golgi
+    def __init__(self, window_name, crop_golgi=None, mode=1, giantin_mask=None, giantin_pred=None, param_dict=None):
         super().__init__()
         self.setObjectName(window_name)
         self.ui = Ui_Golgi_details()
@@ -35,10 +36,10 @@ class GolgiDetailWidget(QWidget):
             self.giantin_possibility_threshold = param_dict["param_giantin_threshold"]
             self.min_giantin_area = param_dict["param_giantin_area_threshold"]
 
-        self.new_shifted_golgi = None
-        self.new_crop_golgi = None
-        self.new_giantin_mask = None
-        self.new_giantin_pred = None
+            self.new_shifted_golgi = None
+            self.new_crop_golgi = None
+            self.new_giantin_mask = None
+            self.new_giantin_pred = None
 
         self.show_img(self.crop_golgi, self.giantin_mask)
 
