@@ -482,7 +482,7 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                                             large_d_count += 1
                                     if large_d_count > 0:
                                         had_convex = True
-                                        sub = max(np.where(task_img > 0, task_img, np.inf).min(), min_sub)
+                                        sub = max(np.min(np.where(task_img > 0, task_img, np.inf)), min_sub)
                                         continue
                                     else:
                                         print("Ellipse match: {}".format(ellipse_match))
@@ -498,7 +498,7 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                                 return copy_golgi, _, _, ret_flag, sub_list, reject_msg
                             else:
                                 # got many small contours
-                                sub = max(np.where(task_img > 0, task_img, np.inf).min(), min_sub)
+                                sub = max(np.min(np.where(task_img > 0, task_img, np.inf)), min_sub)
                                 continue
                     else:
                         if had_convex:
@@ -667,7 +667,7 @@ def cal_radial_mean_intensity(golgi_image):
     df_list = []
     radius_list = []
     for c_ in range(c):
-        df = pd.DataFrame(columns=["No. pixel", "total_intensity", "mean_intensity"], index=range(0, 499))
+        df = pd.DataFrame(columns=["No. pixel", "total_intensity", "mean_intensity"], index=range(1, 500))
         no_pixel = [0 for _ in range(499)]
         total_intensity = [0 for _ in range(499)]
         for i in range(h):
