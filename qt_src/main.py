@@ -15,6 +15,7 @@ from utils import *
 
 from qt_ui.mainUI import Ui_MainWindow
 from golgi_details import GolgiDetailWidget
+from dialog_save import DialogSave
 
 config_file = "config.ini"
 
@@ -38,23 +39,14 @@ class MainWindow(QMainWindow):
         self.pred_data = None
         self.golgi_images = None
         self.pred_flag = True
-        self.crop_golgi_list = []
-        self.shifted_crop_golgi_list = []
-        self.giantin_mask_list = []
-        self.giantin_pred_list = []
-
-        # tab 2
-        self.scroll_golgi_content = None
-        self.axes_id = None
-
-        self.axes_dict = {}
-        self.selected_list = []
+        self.exp_name = ""
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.popup_golgi_widget = None
+        self.ui.tabWidget.setCurrentIndex(0)
 
+        # tab 1
         # image folder path list view
         self.listview_image_path = ListBoxWidget(self.ui.image_group)
         self.listview_image_path.setDragEnabled(True)
@@ -92,6 +84,25 @@ class MainWindow(QMainWindow):
 
         # start
         self.ui.btn_start.clicked.connect(lambda: self.start())
+
+        # tab 2
+        self.scroll_golgi_content = None
+        self.axes_id = None
+
+        self.axes_dict = {}
+        self.selected_list = []
+        self.crop_golgi_list = []
+        self.shifted_crop_golgi_list = []
+        self.giantin_mask_list = []
+        self.giantin_pred_list = []
+
+        self.popup_golgi_widget = None
+        self.popup_averaged = None
+        self.save_golgi_dialog = None
+
+        self.ui.btn_show_avergaed.setDisabled(True)
+        self.ui.btn_show_avergaed.clicked.connect(lambda: self.show_averaged())
+        self.ui.btn_save.clicked.connect(lambda: self.save_golgi_stacks())
 
     def param_default(self):
         self.ui.param_pixel_threshold.setText("0.5")
