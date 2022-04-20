@@ -323,10 +323,11 @@ class MainWindow(QMainWindow):
             return
         self.axes_id = self.axes_dict[id(axes)]
 
-        self.popup_golgi_widget = GolgiDetailWidget("Golgi details", crop_golgi=self.crop_golgi_list[self.axes_id],
+        self.popup_golgi_widget = GolgiDetailWidget("Golgi details", logger=self.logger,
+                                                    crop_golgi=self.crop_golgi_list[self.axes_id],
                                                     giantin_mask=self.giantin_mask_list[self.axes_id],
                                                     giantin_pred=self.giantin_pred_list[self.axes_id],
-                                                    param_dict=self.param_dict, logger=self.logger)
+                                                    param_dict=self.param_dict)
         self.popup_golgi_widget.show()
 
         self.popup_golgi_widget.save_signal.connect(self.update_sub_data)
@@ -414,11 +415,12 @@ class MainWindow(QMainWindow):
             # drop_select
             selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
         averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
-        self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2, logger=self.logger)
+        self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2)
         self.popup_averaged.show()
         self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi)
 
     def save_golgi_stacks(self):
+        # save all golgi mini stacks
         if self.ui.btn_pick.isChecked():
             # pick_select
             selected_shifted_golgi = np.array(self.shifted_crop_golgi_list)[self.selected_list]
