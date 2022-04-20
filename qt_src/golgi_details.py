@@ -283,10 +283,7 @@ class GolgiDetailWidget(QWidget):
             axes.set_xlabel("Distance from center")
             axes.set_ylabel("Radial mean intensity")
 
-        plotLayout = QVBoxLayout()
-        plotLayout.setContentsMargins(2, 2, 2, 2)
-        plotLayout.addWidget(static_canvas)
-        self.ui.golgi_content_widget.setLayout(plotLayout)
+        self.plot_widget(static_canvas)
 
     def save_averaged_result(self):
         ...
