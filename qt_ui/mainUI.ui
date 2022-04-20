@@ -869,9 +869,9 @@ with other channels</string>
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="btn_show_result">
+            <widget class="QPushButton" name="btn_show_avergaed">
              <property name="text">
-              <string>Show LQ histogram</string>
+              <string>Show averaged mini-stacks</string>
              </property>
             </widget>
            </item>
