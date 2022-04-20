@@ -406,6 +406,28 @@ class MainWindow(QMainWindow):
         self.ui.scroll_golgi_content.setLayout(qScrollLayout)
         self.ui.scroll_golgi_content.show()
 
+    def show_averaged(self):
+        if self.ui.btn_pick.isChecked():
+            # pick_select
+            selected_shifted_golgi = np.array(self.shifted_crop_golgi_list)[self.selected_list]
+        else:
+            # drop_select
+            selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
+        averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
+        self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
+        self.popup_averaged.show()
+        self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi)
+
+    def save_golgi_stacks(self):
+        if self.ui.btn_pick.isChecked():
+            # pick_select
+            selected_shifted_golgi = np.array(self.shifted_crop_golgi_list)[self.selected_list]
+        else:
+            # drop_select
+            selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
+        self.save_golgi_dialog = DialogSave(selected_shifted_golgi, exp_name=self.exp_name)
+        self.save_golgi_dialog.show()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
