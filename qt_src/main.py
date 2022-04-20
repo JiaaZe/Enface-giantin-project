@@ -162,6 +162,7 @@ class MainWindow(QMainWindow):
             self.pred_flag = not (path_str == self.last_path_str)
             self.cfg['path']['path'] = path_str
             self.param_dict["path_list"] = path_list
+            self.exp_name = os.path.split(path_list[0])[1].split(".")[0]
         else:
             err_msg += "{} is empty.\n".format(self.ui.label_image_folder.text())
 
@@ -321,10 +322,10 @@ class MainWindow(QMainWindow):
             return
         self.axes_id = self.axes_dict[id(axes)]
 
-        self.popup_golgi_widget = GolgiDetailWidget(self.crop_golgi_list[self.axes_id],
-                                                    self.giantin_mask_list[self.axes_id],
-                                                    self.giantin_pred_list[self.axes_id],
-                                                    self.param_dict)
+        self.popup_golgi_widget = GolgiDetailWidget("Golgi details", crop_golgi=self.crop_golgi_list[self.axes_id],
+                                                    giantin_mask=self.giantin_mask_list[self.axes_id],
+                                                    giantin_pred=self.giantin_pred_list[self.axes_id],
+                                                    param_dict=self.param_dict)
         self.popup_golgi_widget.show()
 
         self.popup_golgi_widget.save_signal.connect(self.update_sub_data)
