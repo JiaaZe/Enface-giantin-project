@@ -20,12 +20,14 @@ class GolgiDetailWidget(QWidget):
     signal_backwork = Signal()
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
-    def __init__(self, window_name, crop_golgi=None, mode=1, giantin_mask=None, giantin_pred=None, param_dict=None):
+    def __init__(self, window_name, logger=None, crop_golgi=None, mode=1, giantin_mask=None, giantin_pred=None,
+                 param_dict=None):
         super().__init__()
         self.setObjectName(window_name)
         self.ui = Ui_Golgi_details()
         self.ui.setupUi(self)
         self.mode = mode
+        self.logger = logger
 
         self.radial_mean_intensity_df_list = None
         self.radius_list = None
@@ -171,7 +173,7 @@ class GolgiDetailWidget(QWidget):
         rows = 2
         static_canvas = FigureCanvas(Figure(figsize=(2 * columns, 0.8 * rows)))
         subplot_axes = static_canvas.figure.subplots(rows, columns)
-        static_canvas.figure.tight_layout(h_pad=0, w_pad=0.5)
+        static_canvas.figure.tight_layout(pad=0.6)
         # static_canvas.figure.subplots_adjust(wspace=0.4)
         font_size = 9
         for j in range(num_channel):
@@ -314,8 +316,8 @@ if __name__ == '__main__':
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
-    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
-    #                            param_dict=param_dict)
+    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=2)
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
+                               param_dict=param_dict)
     window.show()
     sys.exit(app.exec())
