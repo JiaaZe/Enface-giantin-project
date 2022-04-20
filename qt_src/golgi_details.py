@@ -192,6 +192,10 @@ class GolgiDetailWidget(QWidget):
                 cbar = static_canvas.figure.colorbar(img_, ax=axes)
                 for t in cbar.ax.get_yticklabels():
                     t.set_fontsize(font_size)
+                if i == 1:
+                    # mask color bar label -> [0,1]
+                    # cbar.ax.set_yticklabels([0, 1])
+                    cbar.set_ticks([0, 1])
                 if j == self.giantin_channel:
                     axes.set_title("Giantin " + title)
                 else:
