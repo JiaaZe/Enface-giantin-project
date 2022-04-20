@@ -246,6 +246,7 @@ class MainWindow(QMainWindow):
         self.show_golgi()
         # go to tab2
         self.ui.tabWidget.setCurrentIndex(1)
+        self.ui.btn_show_avergaed.setEnabled(True)
 
     def process_pipeline_error_handler(self):
         self.ui.btn_start.setEnabled(True)
@@ -331,7 +332,7 @@ class MainWindow(QMainWindow):
         self.popup_golgi_widget.save_signal.connect(self.update_sub_data)
 
     def update_sub_data(self):
-        new_crop,  new_shifted_golgi, new_mask, new_pred = self.popup_golgi_widget.get_new_data()
+        new_crop, new_shifted_golgi, new_mask, new_pred = self.popup_golgi_widget.get_new_data()
         if new_shifted_golgi is not None:
             self.crop_golgi_list[self.axes_id] = new_crop
             self.giantin_mask_list[self.axes_id] = new_mask
