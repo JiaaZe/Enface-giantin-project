@@ -11,7 +11,7 @@ from matplotlib.figure import Figure
 
 from qt_ui.golgi_details_widget import Ui_Golgi_details
 from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, normalize_total_intensity, \
-    shift_make_border
+    shift_make_border, cal_radial_mean_intensity
 
 
 class GolgiDetailWidget(QWidget):
@@ -41,13 +41,25 @@ class GolgiDetailWidget(QWidget):
             self.new_giantin_mask = None
             self.new_giantin_pred = None
 
-        self.show_img(self.crop_golgi, self.giantin_mask)
+            self.ui.btn_export.setVisible(False)
+            if self.giantin_mask is None:
+                self.giantin_mask = self.crop_golgi[:, :, self.giantin_channel] / (
+                        self.crop_golgi[:, :, self.giantin_channel] + 1) * 255
+            self.show_img(self.crop_golgi, self.giantin_mask)
 
-        # subtraction
-        self.ui.sub_value.setValidator(QIntValidator())
-        self.ui.btn_sub.clicked.connect(self.sub_handler)
-        self.ui.btn_check.clicked.connect(self.check_handler)
-        self.ui.btn_save.clicked.connect(lambda: self.save_signal.emit(0))
+            # subtraction
+            self.ui.sub_value_c1.setValidator(QIntValidator())
+            self.ui.sub_value_c2.setValidator(QIntValidator())
+            self.ui.sub_value_c3.setValidator(QIntValidator())
+            self.ui.btn_sub_c1.clicked.connect(lambda: self.sub_handler(0, self.ui.sub_value_c1.text(),
+                                                                        self.ui.btn_sub_c1))
+            self.ui.btn_sub_c2.clicked.connect(lambda: self.sub_handler(1, self.ui.sub_value_c2.text(),
+                                                                        self.ui.btn_sub_c2))
+            self.ui.btn_sub_c3.clicked.connect(lambda: self.sub_handler(2, self.ui.sub_value_c3.text(),
+                                                                        self.ui.btn_sub_c3))
+            self.ui.btn_check.clicked.connect(self.check_handler)
+
+            self.ui.btn_save.clicked.connect(lambda: self.save_signal.emit(0))
 
             self.ui.btn_check.setDisabled(True)
             self.ui.btn_save.setDisabled(True)
