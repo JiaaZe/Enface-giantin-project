@@ -10,7 +10,7 @@ from qtpy import QtGui
 
 def open_file_dialog(mode=1, filetype_list=[], folder=""):
     """
-    :param mode: 1. multiple directories, 2.single file, 3. multiple fils.
+    :param mode: 1. multiple directories, 2.single file, 3. multiple fils, 4 single directory
     :param filetype_list:
     :param folder: default open folder.
     :return:
@@ -38,6 +38,10 @@ def open_file_dialog(mode=1, filetype_list=[], folder=""):
         if fileDialog.exec():
             path_list = fileDialog.selectedFiles()
             path = ';'.join(path_list)
+    elif mode == 4:
+        fileDialog.setFileMode(QFileDialog.Directory)
+        path = fileDialog.getExistingDirectory()
+        return path
     else:
         # single file
         fileDialog.setFileMode(QFileDialog.ExistingFile)
