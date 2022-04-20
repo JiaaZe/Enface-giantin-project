@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_Golgi_details(object):
     def setupUi(self, Golgi_details):
-        Golgi_details.setObjectName("Golgi_details")
+        # Golgi_details.setObjectName("Golgi_details")
         Golgi_details.resize(1261, 508)
         Golgi_details.setStyleSheet("")
         self.gridLayout_2 = QtWidgets.QGridLayout(Golgi_details)
