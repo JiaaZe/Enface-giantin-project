@@ -192,14 +192,16 @@ class GolgiDetailWidget(QWidget):
                     if i == 0:
                         img = crop_golgi[:, :, j]
                         title = "Channel"
+                        cmap = None
                     else:
                         img = masks[:, :, j]
                         title = "Mask"
+                        cmap = "binary_r"
                     axes = subplot_axes[i][j]
                     for label in (axes.get_xticklabels() + axes.get_yticklabels()):
                         label.set_fontsize(font_size)
 
-                    img_ = axes.imshow(img)
+                    img_ = axes.imshow(img, cmap=cmap)
                     cbar = static_canvas.figure.colorbar(img_, ax=axes)
                     for t in cbar.ax.get_yticklabels():
                         t.set_fontsize(font_size)
@@ -362,9 +364,10 @@ if __name__ == '__main__':
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
-    window.show_averaged_w_plot(np.dstack([data, data]))
-    # window = GolgiDetailWidget("Averaged golgi mini-stacks", mode=1, crop_golgi=np.dstack([data, data, data]),
-    #                            param_dict=param_dict)
+    # window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
+    # window.show_averaged_w_plot(np.dstack([data, data]))
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", logger=None, mode=1,
+                               crop_golgi=np.dstack([data, data, data]),
+                               param_dict=param_dict)
     window.show()
     sys.exit(app.exec())
