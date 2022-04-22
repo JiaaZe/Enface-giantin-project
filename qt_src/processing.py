@@ -42,10 +42,12 @@ class Progress(QObject):
         self.giantin_mask_list = []
         self.giantin_pred_crop_list = []
 
+        self.model = None
         if model is not None:
             self.model = model
         else:
-            self.model = None
+            if not os.path.exists(model_path):
+                raise Exception("No such model file:{}".format(model_path))
 
     def pipeline(self):
         try:
@@ -69,7 +71,7 @@ class Progress(QObject):
                         tif_path_list.append(path)
                         golgi_image_list.append(golgi_image)
                         giantin_image_list.append(golgi_image[self.param_giantin_channel])
-                print(tif_path_list)
+                # print(tif_path_list)
                 num_golgi_images = len(tif_path_list)
                 self.logger.info("Read {} golgi images sucessfully.".format(num_golgi_images))
                 self.append_text.emit("Read {} golgi images sucessfully.".format(num_golgi_images))
@@ -140,13 +142,12 @@ class Progress(QObject):
                 # crop giantin pred
                 self.giantin_pred_crop_list.extend(giantin_pred_list)
 
-
             self.logger.info("Analyzing predicted giantin masks finished.")
             self.append_text.emit("Analyzing predicted giantin masks finished.")
 
         except Exception as e:
-            self.logger.error("{}".format(e))
-            self.append_text.emit("{}".format(e))
+            self.logger.error("Error: {}".format(e))
+            self.append_text.emit("Error: {}".format(e))
             self.pred_flag = True
             self.pipeline_error.emit(0)
         else:
