@@ -10,6 +10,7 @@ patchify==0.2.3
 pyinstaller==4.8
 tifffile==2021.7.2
 tensorflow-cpu==2.6.0
+openpyxl==3.0.9
 
 # for jupyter
 # read-roi==1.6.0
