@@ -55,6 +55,7 @@ class DialogSave(QWidget):
             filename = os.path.join(self.path, "{}_C{}.tif".format(self.exp_name, c_ + 1))
             tifffile.imsave(file=filename, data=data_in_channel)
         os.startfile(self.path)
+        self.close()
 
 
 if __name__ == '__main__':
