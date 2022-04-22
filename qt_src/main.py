@@ -2,9 +2,9 @@ import configparser
 import sys
 
 import numpy as np
-from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal, QRect
+from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
-from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget, QMenu
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout
 
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
@@ -23,6 +23,7 @@ config_file = "config.ini"
 class MainWindow(QMainWindow):
     start_backgroung_work = Signal()
     last_path_str = ""
+    last_giantin_channel = ""
 
     def __init__(self):
         super().__init__()
@@ -164,6 +165,7 @@ class MainWindow(QMainWindow):
             self.param_dict["path_list"] = path_list
             self.exp_name = os.path.split(path_list[0])[1].split(".")[0]
         else:
+            path_str = ""
             err_msg += "{} is empty.\n".format(self.ui.label_image_folder.text())
 
         param_pixel_threshold = self.ui.param_pixel_threshold.text()
@@ -196,6 +198,7 @@ class MainWindow(QMainWindow):
 
         param_giantin_channel = self.ui.param_giantin_channel.text()
         if len(param_giantin_channel) > 0:
+            self.pred_flag = not (param_giantin_channel == self.last_giantin_channel)
             self.cfg['params']['param_giantin_channel'] = param_giantin_channel
             self.param_dict["param_giantin_channel"] = int(param_giantin_channel) - 1
         else:
@@ -218,6 +221,7 @@ class MainWindow(QMainWindow):
             return False
         else:
             self.last_path_str = path_str
+            self.last_giantin_channel = param_giantin_channel
             with open(config_file, 'w') as configfile:
                 self.cfg.write(configfile)
             return True
@@ -259,6 +263,8 @@ class MainWindow(QMainWindow):
             param_flag = self.get_write_param()
             if not param_flag:
                 return
+            if self.pred_data is None:
+                self.pred_flag = True
             self.ui.btn_start.setDisabled(True)
             self.ui.progress_text.clear()
             self.logger.info("start")
