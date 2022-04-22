@@ -485,9 +485,11 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                                         sub = max(np.min(np.where(task_img > 0, task_img, np.inf)), min_sub)
                                         continue
                                     else:
-                                        print("Ellipse match: {}".format(ellipse_match))
+                                        ...
+                                        # print("Ellipse match: {}".format(ellipse_match))
                             else:
-                                print("Circle match: {}".format(circle_match))
+                                ...
+                                # print("Circle match: {}".format(circle_match))
                             giantin_mask = channel_mask
                         else:
                             # no.contuors >= 3
@@ -506,7 +508,8 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                             ret_flag = False
                             return copy_golgi, _, _, ret_flag, sub_list, reject_msg
                         # the U shape
-                        print("ratio larger than 1.05. {}".format(ratio))
+                        ...
+                        # print("ratio larger than 1.05. {}".format(ratio))
                     break
                 else:
                     # no contour in giantin channel
@@ -683,7 +686,7 @@ def cal_radial_mean_intensity(golgi_image):
         df_list.append(df)
         radius = cal_radius(df)
         radius_list.append(radius)
-        print("chennel {} finished".format(c_))
+        # print("chennel {} finished".format(c_))
     return df_list, radius_list
 
 
