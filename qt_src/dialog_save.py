@@ -2,7 +2,6 @@ import os.path
 import sys
 
 import numpy as np
-import pandas as pd
 import tifffile.tifffile
 
 from PyQt5.QtWidgets import QWidget, QApplication
