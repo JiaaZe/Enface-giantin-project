@@ -93,7 +93,7 @@ class GolgiDetailWidget(QWidget):
         label.setAlignment(QtCore.Qt.AlignCenter)
         label.setObjectName("label")
         layout.addWidget(label)
-        movie = QMovie("../qt_ui/loading.gif")
+        movie = QMovie("./loading.gif")
         label.setMovie(movie)
         movie.start()
 
