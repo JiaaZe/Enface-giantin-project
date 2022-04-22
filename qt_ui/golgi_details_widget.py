@@ -119,6 +119,9 @@ class Ui_Golgi_details(object):
         self.gridLayout_2.addWidget(self.frame, 0, 0, 1, 1)
 
         self.retranslateUi(Golgi_details)
+        self.sub_value_c1.returnPressed.connect(self.btn_sub_c1.click)
+        self.sub_value_c2.returnPressed.connect(self.btn_sub_c2.click)
+        self.sub_value_c3.returnPressed.connect(self.btn_sub_c3.click)
         QtCore.QMetaObject.connectSlotsByName(Golgi_details)
 
     def retranslateUi(self, Golgi_details):

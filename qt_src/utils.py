@@ -5,7 +5,6 @@ from logging.handlers import TimedRotatingFileHandler
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QContextMenuEvent, QCursor
 from PyQt5.QtWidgets import QListWidget, QFileDialog, QListView, QAbstractItemView, QTreeView, QWidget, QMenu, QAction
-from qtpy import QtGui
 
 
 def open_file_dialog(mode=1, filetype_list=[], folder=""):
