@@ -40,7 +40,9 @@ class GolgiDetailWidget(QWidget):
         if self.mode == 1:
             self.ui.btn_save.setText("Save")
             self.giantin_mask = giantin_mask
-            self.crop_mask = None
+            # original mask
+            self.crop_mask = crop_golgi / (crop_golgi + 1) * 255
+            self.crop_mask = self.crop_mask.astype(np.bool_)
             self.giantin_pred = giantin_pred
             self.giantin_channel = param_dict["param_giantin_channel"]
             self.blank_channel = param_dict["param_blank_channel"]
@@ -49,12 +51,15 @@ class GolgiDetailWidget(QWidget):
             self.min_giantin_area = param_dict["param_giantin_area_threshold"]
 
             self.new_shifted_golgi = None
-            self.new_crop_golgi = None
+            # subtracted crop golgi
+            self.new_crop_golgi = np.copy(crop_golgi)
+            # subtracted crop mask
+            self.new_crop_mask = np.copy(self.crop_mask)
             self.new_giantin_mask = None
             self.new_giantin_pred = None
 
             self.ui.btn_export.setVisible(False)
-            self.show_golgi_details(self.crop_golgi, None)
+            self.show_golgi_details(self.crop_golgi, self.crop_mask)
 
             # subtraction
             self.ui.sub_value_c1.setValidator(QIntValidator())
@@ -99,23 +104,24 @@ class GolgiDetailWidget(QWidget):
             btn_ui.setDisabled(True)
 
             sub_value = int(sub_value)
-            new_crop = np.copy(self.crop_golgi)
-            new_mask = np.copy(self.crop_mask)
-            golgi_crop = new_crop[:, :, channel]
-            h, w = golgi_crop.shape
-            for i in range(h):
-                for j in range(w):
-                    if golgi_crop[i][j] > sub_value:
-                        golgi_crop[i][j] = golgi_crop[i][j] - sub_value
-                    else:
-                        golgi_crop[i][j] = 0
+            # get original crop golgi in certain channel
+            golgi_crop = np.copy(self.crop_golgi[:, :, channel])
+            # golgi_crop = new_crop[:, :, channel]
+            golgi_crop = np.where(golgi_crop > sub_value, golgi_crop-sub_value, 0)
+            # for i in range(h):
+            #     for j in range(w):
+            #         if golgi_crop[i][j] > sub_value:
+            #             golgi_crop[i][j] = golgi_crop[i][j] - sub_value
+            #         else:
+            #             golgi_crop[i][j] = 0
 
+            # calcualte mask
             mask = golgi_crop / (golgi_crop + 1) * 255
             mask = mask.astype(np.bool_)
-            new_mask[:, :, channel] = mask
 
-            self.new_crop_golgi = new_crop
-            self.show_golgi_details(new_crop, new_mask)
+            self.new_crop_golgi[:, :, channel] = golgi_crop
+            self.new_crop_mask[:, :, channel] = mask
+            self.show_golgi_details(self.new_crop_golgi, self.new_crop_mask)
             btn_ui.setEnabled(True)
             self.ui.btn_check.setEnabled(True)
         except Exception as e:
@@ -161,8 +167,7 @@ class GolgiDetailWidget(QWidget):
                         self.ui.btn_save.setEnabled(True)
 
                         # show result after check
-                        self.crop_golgi = golgi
-                        self.show_golgi_details(self.crop_golgi, None)
+                        self.show_golgi_details(self.new_crop_golgi, None)
                         break
                 else:
                     self.logger.info(rej_msg)
@@ -176,9 +181,8 @@ class GolgiDetailWidget(QWidget):
     def show_golgi_details(self, crop_golgi, masks):
         try:
             if masks is None:
-                self.crop_mask = self.crop_golgi / (self.crop_golgi + 1) * 255
-                self.crop_mask = self.crop_mask.astype(np.bool_)
-                masks = self.crop_mask
+                masks = crop_golgi / (crop_golgi + 1) * 255
+                masks = masks.astype(np.bool_)
             num_channel = crop_golgi.shape[-1]
             columns = num_channel
             rows = 2
@@ -366,7 +370,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     # window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
     # window.show_averaged_w_plot(np.dstack([data, data]))
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", logger=None, mode=1,
+    window = GolgiDetailWidget("Golgi Details", logger=None, mode=1,
                                crop_golgi=np.dstack([data, data, data]),
                                param_dict=param_dict)
     window.show()
