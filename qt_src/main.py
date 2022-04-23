@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.pred_flag = True
         self.exp_name = ""
 
+        self.setWindowTitle("Enface Average Tool")
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 

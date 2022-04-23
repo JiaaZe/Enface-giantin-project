@@ -73,7 +73,7 @@ class Ui_Dialog_save(object):
 
     def retranslateUi(self, Dialog_save):
         _translate = QtCore.QCoreApplication.translate
-        Dialog_save.setWindowTitle(_translate("Dialog_save", "Dialog"))
+        Dialog_save.setWindowTitle(_translate("Dialog_save", "Save Golgi mini-stacks"))
         self.label_path.setText(_translate("Dialog_save", "Path"))
         self.btn_browse.setText(_translate("Dialog_save", "Browse"))
         self.label_exp_name.setText(_translate("Dialog_save", "Exp. name"))

@@ -333,7 +333,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        # MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.image_group.setTitle(_translate("MainWindow", "Golgi Image"))
         self.label_image_folder.setText(_translate("MainWindow", "Golgi Image Folders"))
         self.btn_image_browse.setText(_translate("MainWindow", "Browse"))

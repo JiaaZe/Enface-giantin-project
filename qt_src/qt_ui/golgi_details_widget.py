@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_Golgi_details(object):
     def setupUi(self, Golgi_details):
-        # Golgi_details.setObjectName("Golgi_details")
+        Golgi_details.setObjectName("Golgi_details")
         Golgi_details.resize(1261, 508)
         Golgi_details.setStyleSheet("")
         self.gridLayout_2 = QtWidgets.QGridLayout(Golgi_details)
@@ -126,7 +126,7 @@ class Ui_Golgi_details(object):
 
     def retranslateUi(self, Golgi_details):
         _translate = QtCore.QCoreApplication.translate
-        Golgi_details.setWindowTitle(_translate("Golgi_details", "Golgi Details"))
+        # Golgi_details.setWindowTitle(_translate("Golgi_details", "Golgi Details"))
         self.label_c1.setText(_translate("Golgi_details", "C1:"))
         self.btn_sub_c1.setText(_translate("Golgi_details", "Subtract"))
         self.label_c2.setText(_translate("Golgi_details", "C2:"))
