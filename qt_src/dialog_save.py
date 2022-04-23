@@ -14,7 +14,7 @@ from utils import open_file_dialog
 class DialogSave(QWidget):
     save_signal = Signal(int)
 
-    def __init__(self, crop_golgi_data, exp_name=None):
+    def __init__(self, crop_golgi_data, save_directory=None, exp_name=None):
         # crop_golgi_data: shape:[n,701,701,c]
         super().__init__()
         self.ui = Ui_Dialog_save()
@@ -25,10 +25,16 @@ class DialogSave(QWidget):
             self.ui.exp_name_text.setText(exp_name)
         else:
             self.exp_name = ""
-        self.path = ""
+        if save_directory is not None:
+            self.path = save_directory
+            self.ui.path_text.setText(save_directory)
+        else:
+            self.path = ""
         self.data = crop_golgi_data
 
         self.ui.btn_save.setDisabled(True)
+        if len(self.exp_name) > 0 and len(self.path) > 0:
+            self.ui.btn_save.setEnabled(True)
         self.ui.exp_name_text.textChanged.connect(lambda: self.enable_save_btn())
         self.ui.path_text.textChanged.connect(lambda: self.enable_save_btn())
 
@@ -52,7 +58,7 @@ class DialogSave(QWidget):
         c = data_shape[-1]
         for c_ in range(c):
             data_in_channel = self.data[:, :, :, c_]
-            filename = os.path.join(self.path, "{}_C{}.tif".format(self.exp_name, c_ + 1))
+            filename = os.path.join(self.path, "averaged_{}_C{}.tif".format(self.exp_name, c_ + 1))
             tifffile.imsave(file=filename, data=data_in_channel)
         os.startfile(self.path)
         self.close()

@@ -1,4 +1,6 @@
 import logging
+import os
+
 import cv2
 import numpy as np
 import pandas as pd
@@ -23,13 +25,14 @@ class GolgiDetailWidget(QWidget):
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
     def __init__(self, window_name, logger: logging.Logger, crop_golgi=None,
-                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None):
+                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None, save_directory=None):
         super().__init__()
-        self.setObjectName(window_name)
+        self.setWindowTitle(window_name)
         self.ui = Ui_Golgi_details()
         self.ui.setupUi(self)
         self.mode = mode
         self.logger = logger
+        self.save_directory = save_directory
 
         self.radial_mean_intensity_df_list = None
         self.radius_list = None
@@ -62,6 +65,10 @@ class GolgiDetailWidget(QWidget):
             self.show_golgi_details(self.crop_golgi, self.crop_mask)
 
             # subtraction
+            if crop_golgi.shape[-1] == 2:
+                self.ui.sub_value_c3.setVisible(False)
+                self.ui.btn_sub_c3.setVisible(False)
+                self.ui.label_c3.setVisible(False)
             self.ui.sub_value_c1.setValidator(QIntValidator())
             self.ui.sub_value_c2.setValidator(QIntValidator())
             self.ui.sub_value_c3.setValidator(QIntValidator())
@@ -107,7 +114,7 @@ class GolgiDetailWidget(QWidget):
             # get original crop golgi in certain channel
             golgi_crop = np.copy(self.crop_golgi[:, :, channel])
             # golgi_crop = new_crop[:, :, channel]
-            golgi_crop = np.where(golgi_crop > sub_value, golgi_crop-sub_value, 0)
+            golgi_crop = np.where(golgi_crop > sub_value, golgi_crop - sub_value, 0)
             # for i in range(h):
             #     for j in range(w):
             #         if golgi_crop[i][j] > sub_value:
@@ -323,7 +330,9 @@ class GolgiDetailWidget(QWidget):
         try:
             plotLayout = self.ui.golgi_content_widget.layout()
             canvas = plotLayout.itemAt(0).widget()
-            save_path, save_type = QFileDialog.getSaveFileName(self, "Save File", "averaged_plot",
+            save_path, save_type = QFileDialog.getSaveFileName(self, "Save File",
+                                                               directory=os.path.join(self.save_directory,
+                                                                                      "averaged_plot"),
                                                                filter='pdf (*.pdf);; png (*.png);;jpg (*.jpg)')
             if save_type == "pdf (*.pdf)":
                 with PdfPages(save_path) as pdf:
@@ -335,7 +344,9 @@ class GolgiDetailWidget(QWidget):
 
     def export_averaged_result(self):
         try:
-            save_path, _ = QFileDialog.getSaveFileName(self, "Save File", "radial mean intensity",
+            save_path, _ = QFileDialog.getSaveFileName(self, "Save File",
+                                                       directory=os.path.join(self.save_directory,
+                                                                              "radial mean intensity"),
                                                        filter='xlsx (*.xlsx)')
 
             excel_writer = pd.ExcelWriter(save_path)
@@ -368,10 +379,10 @@ if __name__ == '__main__':
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    # window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
-    # window.show_averaged_w_plot(np.dstack([data, data]))
-    window = GolgiDetailWidget("Golgi Details", logger=None, mode=1,
-                               crop_golgi=np.dstack([data, data, data]),
-                               param_dict=param_dict)
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
+    window.show_averaged_w_plot(np.dstack([data, data]))
+    # window = GolgiDetailWidget("Golgi Details", logger=None, mode=1,
+    #                            crop_golgi=np.dstack([data, data, data]),
+    #                            param_dict=param_dict)
     window.show()
     sys.exit(app.exec())
