@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
 
         param_giantin_channel = self.ui.param_giantin_channel.text()
         if len(param_giantin_channel) > 0:
-            self.pred_flag = not (param_giantin_channel == self.last_giantin_channel)
+            self.pred_flag = self.pred_flag or not (param_giantin_channel == self.last_giantin_channel)
             self.cfg['params']['param_giantin_channel'] = param_giantin_channel
             self.param_dict["param_giantin_channel"] = int(param_giantin_channel) - 1
         else:
