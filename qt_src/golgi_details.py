@@ -85,6 +85,7 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_check.setDisabled(True)
             self.ui.btn_save.setDisabled(True)
         elif self.mode == 2:
+            self.giantin_channel = param_dict["param_giantin_channel"]
             self.ui.btn_save.setText("Save plots")
             self.hide_widget_for_averaged()
             self.ui.btn_save.setDisabled(True)
@@ -280,6 +281,10 @@ class GolgiDetailWidget(QWidget):
 
             # get plot data
             self.radial_mean_intensity_df_list, self.radius_list = self.backwork.get_data()
+            giantin_radius = self.radius_list[self.giantin_channel - 1]
+            for i, radius in enumerate(self.radius_list):
+                self.radial_mean_intensity_df_list[i]["normalized_radius"] = self.radial_mean_intensity_df_list[
+                                                                                 i].index / giantin_radius
 
             for j in range(columns - 1):
                 # show golgi
@@ -301,7 +306,8 @@ class GolgiDetailWidget(QWidget):
 
                 # show plot
                 plot_axes = subplot_axes[1][j]
-                plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
+                plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_radius"],
+                               self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
                 for label in (plot_axes.get_xticklabels() + plot_axes.get_yticklabels()):
                     label.set_fontsize(font_size)
 
@@ -314,7 +320,8 @@ class GolgiDetailWidget(QWidget):
             subplot_axes[0][-1].imshow(merge_img)
 
             for k in range(num_channel):
-                subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[k]["normalized_mean_intensity"])
+                subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[k]["normalized_radius"],
+                                         self.radial_mean_intensity_df_list[k]["normalized_mean_intensity"])
 
             for axes in subplot_axes[1]:
                 axes.set_xlabel("Distance from center")
@@ -325,6 +332,8 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_export.setEnabled(True)
         except Exception as e:
             self.logger.error("Error when plot the averaged plot:{}".format(e))
+            self.close()
+            # todo show error in main window
 
     def save_averaged_result(self):
         try:

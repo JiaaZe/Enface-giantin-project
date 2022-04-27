@@ -434,7 +434,9 @@ class MainWindow(QMainWindow):
             selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
         averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
         self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
-                                                save_directory=self.save_directory)
+                                                save_directory=self.save_directory,
+                                                param_dict=
+                                                {"param_giantin_channel": self.param_dict["param_giantin_channel"]})
         self.popup_averaged.show()
         self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi)
 

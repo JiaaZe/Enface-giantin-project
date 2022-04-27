@@ -698,7 +698,7 @@ def cal_radius(df):
     for i, cur_intensity in df["mean_intensity"][::-1].iteritems():
         if i == r_peak:
             break
-        pre_intensity = df["mean_intensity"].iloc[i - 1]
+        pre_intensity = df["mean_intensity"].loc[i - 1]
         if pre_intensity >= FWHM >= cur_intensity:
             if pre_intensity - FWHM >= FWHM - cur_intensity:
                 radius = i + 1
