@@ -14,6 +14,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
 
+from qt_src.utils import get_logger
 from qt_ui.golgi_details_widget import Ui_Golgi_details
 from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, normalize_total_intensity, \
     shift_make_border, cal_radial_mean_intensity
@@ -31,6 +32,8 @@ class GolgiDetailWidget(QWidget):
         self.ui = Ui_Golgi_details()
         self.ui.setupUi(self)
         self.mode = mode
+        if logger is None:
+            logger = get_logger()
         self.logger = logger
         self.save_directory = save_directory
 
