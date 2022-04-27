@@ -26,7 +26,7 @@ class GolgiDetailWidget(QWidget):
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
     def __init__(self, window_name, logger: logging.Logger, crop_golgi=None,
-                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None, save_directory=None):
+                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None, save_directory=""):
         super().__init__()
         self.setWindowTitle(window_name)
         self.ui = Ui_Golgi_details()
@@ -43,6 +43,7 @@ class GolgiDetailWidget(QWidget):
         self.backwork = None
 
         self.crop_golgi = crop_golgi
+        self.ui.browser_error.setVisible(False)
         if self.mode == 1:
             self.ui.btn_save.setText("Save")
             self.giantin_mask = giantin_mask
@@ -94,8 +95,12 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_save.setDisabled(True)
             self.ui.btn_export.setDisabled(True)
             self.ui.btn_save.clicked.connect(lambda: self.save_averaged_result())
-            self.ui.btn_export.clicked.connect(lambda: self.export_averaged_result())
+            self.ui.btn_export.clicked.connect(self.export_averaged_result)
             self.show_loading()
+
+    def update_message(self, text):
+        self.ui.browser_error.setVisible(True)
+        self.ui.browser_error.append(text)
 
     def show_loading(self):
         layout = QVBoxLayout(self.ui.golgi_content_widget)
@@ -184,7 +189,9 @@ class GolgiDetailWidget(QWidget):
                     self.logger.info(rej_msg)
                     break
         except Exception as e:
-            self.logger.error("Error when check single golgi mini-stacks:{}".format(e))
+            err_msg = "Error when check single golgi mini-stacks:{}".format(e)
+            self.logger.error(err_msg)
+            self.update_message(err_msg)
 
     def get_new_data(self):
         return self.new_crop_golgi, self.new_shifted_golgi, self.new_giantin_mask, self.new_giantin_pred
@@ -230,7 +237,9 @@ class GolgiDetailWidget(QWidget):
                         axes.set_title("C{} ".format(j + 1) + title)
             self.plot_widget(static_canvas)
         except Exception as e:
-            self.logger.error("Error when show golgi mini-stacks details:{}".format(e))
+            err_msg = "Error when show golgi mini-stacks details:{}".format(e)
+            self.logger.error(err_msg)
+            self.update_message(err_msg)
 
     # for averaged data
     def hide_widget_for_averaged(self):
@@ -334,9 +343,9 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_save.setEnabled(True)
             self.ui.btn_export.setEnabled(True)
         except Exception as e:
-            self.logger.error("Error when plot the averaged plot:{}".format(e))
-            self.close()
-            # todo show error in main window
+            err_msg = "Error when plot the averaged plot:{}".format(e)
+            self.logger.error(err_msg)
+            self.update_message(err_msg)
 
     def save_averaged_result(self):
         try:
@@ -352,7 +361,14 @@ class GolgiDetailWidget(QWidget):
             else:
                 canvas.figure.savefig(save_path)
         except Exception as e:
-            self.logger.error("Error when save averaged plot: {}".format(e))
+            err_msg = "Error when save averaged plot: {}".format(e)
+            self.logger.error(err_msg)
+            self.update_message(err_msg)
+        else:
+            os.startfile(os.path.split(save_path)[0])
+            success_msg = "Save averaged plot sucessfully."
+            self.logger.info(success_msg)
+            self.update_message(success_msg)
 
     def export_averaged_result(self):
         try:
@@ -366,7 +382,14 @@ class GolgiDetailWidget(QWidget):
                 df.to_excel(excel_writer, sheet_name="C{}".format(i + 1))
             excel_writer.save()
         except Exception as e:
-            self.logger.error("Error when export averaged result: {}".format(e))
+            err_msg = "Error when export averaged results: {}".format(e)
+            self.logger.error(err_msg)
+            self.update_message(err_msg)
+        else:
+            os.startfile(os.path.split(save_path)[0])
+            success_msg = "Export averaged results sucessfully."
+            self.logger.info(success_msg)
+            self.update_message(success_msg)
 
 
 class Backwork(QObject):
@@ -391,7 +414,7 @@ if __name__ == '__main__':
                   "param_blank_channel": -1, "param_giantin_channel": 0}
     data = pd.read_csv("../try/try.csv")
     app = QApplication(sys.argv)
-    window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2)
+    window = GolgiDetailWidget("Averaged golgi mini-stacks", None, mode=2, param_dict=param_dict)
     window.show_averaged_w_plot(np.dstack([data, data]))
     # window = GolgiDetailWidget("Golgi Details", logger=None, mode=1,
     #                            crop_golgi=np.dstack([data, data, data]),
