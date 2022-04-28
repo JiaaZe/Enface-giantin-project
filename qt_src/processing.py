@@ -184,7 +184,7 @@ class Progress(QObject):
                     gyradius = cal_gyradius(crop_giantin, mx, my)
                     if rect_size > gyradius * target_size / 100:
                         rect_size = int(gyradius * target_size / 100)
-                        print("new rect_size: {}".format(rect_size))
+                        # print("new rect_size: {}".format(rect_size))
                         continue
                     else:
                         new_size = [int(size * 100 / gyradius) for size in crop_giantin.shape]
