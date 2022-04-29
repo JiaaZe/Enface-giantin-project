@@ -635,7 +635,11 @@ def shift_make_border(image, giantin_channel, border_size=(701, 701), center_coo
     assert len(image.shape) == 3, "Dimension of image shape is not 3."
     h, w, c = image.shape
     pad_image = np.pad(image, ((0, border_size[0] - w), (0, border_size[1] - h), (0, 0)))
-    mx, my = cal_center_of_mass(pad_image[:, :, giantin_channel])
+    channel_mask = pad_image[:, :, giantin_channel] / (pad_image[:, :, giantin_channel] + 1) * 255
+    channel_mask = channel_mask.astype(np.uint8)
+    _, channel_mask = cv2.threshold(channel_mask, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(channel_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    mx, my = cal_center_of_mass(pad_image[:, :, giantin_channel], contour=contours[0])
     if shift_to_imageJ:
         mx += 0.5
         my += 0.5
