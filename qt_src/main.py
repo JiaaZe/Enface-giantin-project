@@ -85,6 +85,9 @@ class MainWindow(QMainWindow):
 
         self.ui.btn_default_param.clicked.connect(lambda: self.param_default())
 
+        # channel name
+        self.ui.btn_extract_channel_name.clicked.connect(lambda: self.extract_file_name())
+
         # start
         self.ui.btn_start.clicked.connect(lambda: self.start())
 
