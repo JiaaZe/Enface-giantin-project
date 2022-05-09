@@ -143,7 +143,7 @@ class GolgiDetailWidget(QWidget):
             btn_ui.setEnabled(True)
             self.ui.btn_check.setEnabled(True)
         except Exception as e:
-            self.logger.error("Error when do subtraction:{}".format(e))
+            self.logger.error("Error when do subtraction:{}".format(e), exc_info=True)
 
     def check_handler(self):
         try:
@@ -192,7 +192,7 @@ class GolgiDetailWidget(QWidget):
                     break
         except Exception as e:
             err_msg = "Error when check single golgi mini-stacks:{}".format(e)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
 
     def get_new_data(self):
@@ -243,7 +243,7 @@ class GolgiDetailWidget(QWidget):
             self.plot_widget(static_canvas)
         except Exception as e:
             err_msg = "Error when show golgi mini-stacks details:{}".format(e)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
 
     # for averaged data
@@ -381,7 +381,7 @@ class GolgiDetailWidget(QWidget):
             self.ui.btn_export.setEnabled(True)
         except Exception as e:
             err_msg = "Error when plot the averaged plot:{}".format(e)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
 
     def save_averaged_result(self):
@@ -399,7 +399,7 @@ class GolgiDetailWidget(QWidget):
                 canvas.figure.savefig(save_path)
         except Exception as e:
             err_msg = "Error when save averaged plot: {}".format(e)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
         else:
             os.startfile(os.path.split(save_path)[0])
@@ -420,7 +420,7 @@ class GolgiDetailWidget(QWidget):
             excel_writer.save()
         except Exception as e:
             err_msg = "Error when export averaged results: {}".format(e)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
         else:
             os.startfile(os.path.split(save_path)[0])
