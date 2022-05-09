@@ -146,7 +146,7 @@ class Progress(QObject):
             self.append_text.emit("Analyzing predicted giantin masks finished.")
 
         except Exception as e:
-            self.logger.error("Error: {}".format(e))
+            self.logger.error("Error: {}".format(e), exc_info=True)
             self.append_text.emit("Error: {}".format(e))
             self.pred_flag = True
             self.pipeline_error.emit(0)
