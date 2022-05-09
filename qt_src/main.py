@@ -424,6 +424,11 @@ class MainWindow(QMainWindow):
         self.ui.scroll_golgi_content = QWidget()
         self.ui.scroll_golgi.setWidget(self.ui.scroll_golgi_content)
 
+        for i, crop_golgi in enumerate(self.shifted_crop_golgi_list):
+            if crop_golgi.shape[-1] == 2:
+                empty_shape = crop_golgi.shape[:2] + (1,)
+                empty_img = np.zeros(shape=empty_shape)
+                self.shifted_crop_golgi_list[i] = np.dstack([crop_golgi, empty_img])
         giantin_list = np.array(self.shifted_crop_golgi_list)[:, :, :, self.param_dict["param_giantin_channel"]]
         num_giantin = giantin_list.shape[0]
         qScrollLayout = QVBoxLayout()
