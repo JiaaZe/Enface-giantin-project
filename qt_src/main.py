@@ -1,5 +1,7 @@
 import configparser
+import os.path
 import sys
+import re
 
 import numpy as np
 from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
@@ -71,7 +73,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             err_msg = "Error:{} when load parameters from {}. Using default parameters.".format(e, config_file)
             self.update_message(err_msg)
-            self.logger.error(err_msg)
+            self.logger.error(err_msg, exc_info=True)
             self.param_default()
 
         # param line edit RegExp
@@ -190,6 +192,7 @@ class MainWindow(QMainWindow):
             path_list = self.cfg.get("path", "path").split(";")
             self.param_dict["path_list"] = path_list
             self.listview_image_path.addItems(path_list)
+            self.extract_file_name(path_list[0])
 
         else:
             self.cfg['path'] = {}
@@ -292,11 +295,17 @@ class MainWindow(QMainWindow):
         if len(self.crop_golgi_list) == 0:
             self.update_message("No satisfied giantin found. Try to use ImageJ manually.")
             return
-        # show result in tab2
-        self.show_golgi()
-        # go to tab2
-        self.ui.tabWidget.setCurrentIndex(1)
-        self.ui.btn_show_avergaed.setEnabled(True)
+        try:
+            # show result in tab2
+            self.show_golgi()
+            # go to tab2
+            self.ui.tabWidget.setCurrentIndex(1)
+            self.ui.btn_show_avergaed.setEnabled(True)
+        except Exception as e:
+            self.pred_flag = True
+            self.ui.progress_text.append("{}".format(e))
+            self.logger.error("{}".format(e), exc_info=True)
+            self.ui.btn_start.setEnabled(True)
 
     def process_pipeline_error_handler(self):
         self.ui.btn_start.setEnabled(True)
@@ -341,6 +350,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.pred_flag = True
             self.ui.progress_text.append("{}".format(e))
+            self.logger.error("{}".format(e), exc_info=True)
             self.ui.btn_start.setEnabled(True)
 
     def subplot_left_click(self, event):
