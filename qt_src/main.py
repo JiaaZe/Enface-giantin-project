@@ -107,6 +107,42 @@ class MainWindow(QMainWindow):
         self.ui.btn_show_avergaed.clicked.connect(lambda: self.show_averaged())
         self.ui.btn_save.clicked.connect(lambda: self.save_golgi_stacks())
 
+    def extract_file_name(self, first_path=None):
+        if first_path is None:
+            first_item = self.listview_image_path.item(0)
+            if first_item is None:
+                return
+            first_path = first_item.text()
+        file_name = os.path.split(first_path)[1]
+        if not os.path.isfile(first_path):
+            for _, _, files in os.walk(first_path):
+                for file in files:
+                    if file.endswith(".tif"):
+                        file_name = file
+                        file_name_split_list = re.split('[-_]', file_name)
+                        self.ui.comboBox_c1.clear()
+                        self.ui.comboBox_c1.addItems(file_name_split_list)
+                        self.ui.comboBox_c2.clear()
+                        self.ui.comboBox_c2.addItems(file_name_split_list)
+                        self.ui.comboBox_c3.clear()
+                        self.ui.comboBox_c3.addItems(file_name_split_list)
+                        return
+        else:
+            file_name_split_list = re.split('[-_]', file_name)
+            self.ui.comboBox_c1.clear()
+            self.ui.comboBox_c1.addItems(file_name_split_list)
+            self.ui.comboBox_c2.clear()
+            self.ui.comboBox_c2.addItems(file_name_split_list)
+            self.ui.comboBox_c3.clear()
+            self.ui.comboBox_c3.addItems(file_name_split_list)
+            return
+
+    def get_cur_channel_name(self):
+        c1_name = self.ui.comboBox_c1.currentText()
+        c2_name = self.ui.comboBox_c2.currentText()
+        c3_name = self.ui.comboBox_c3.currentText()
+        return [c1_name, c2_name, c3_name]
+
     def param_default(self):
         self.ui.param_pixel_threshold.setText("0.5")
         self.ui.param_giantin_threshold.setText("0.6")
