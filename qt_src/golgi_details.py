@@ -13,6 +13,7 @@ from PyQt5 import QtCore
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 
 from qt_src.utils import get_logger
 from qt_ui.golgi_details_widget import Ui_Golgi_details
@@ -26,7 +27,7 @@ class GolgiDetailWidget(QWidget):
 
     # mode: 1 for golgi details. 2 for dispaly averaged golgi
     def __init__(self, window_name, logger: logging.Logger, crop_golgi=None,
-                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None, save_directory=""):
+                 mode=1, giantin_mask=None, giantin_pred=None, param_dict=None, save_directory="", channel_name=None):
         super().__init__()
         self.setWindowTitle(window_name)
         self.ui = Ui_Golgi_details()
@@ -36,6 +37,7 @@ class GolgiDetailWidget(QWidget):
             logger = get_logger()
         self.logger = logger
         self.save_directory = save_directory
+        self.channel_name = channel_name
 
         self.radial_mean_intensity_df_list = None
         self.radius_list = None
@@ -213,11 +215,13 @@ class GolgiDetailWidget(QWidget):
                 for i in range(2):
                     if i == 0:
                         img = crop_golgi[:, :, j]
-                        title = "Channel"
+                        # title = "Channel"
+                        title = self.channel_name[j]
                         cmap = None
                     else:
                         img = masks[:, :, j]
-                        title = "Mask"
+                        # title = "Mask"
+                        title = self.channel_name[j] + " mask"
                         cmap = "binary_r"
                     axes = subplot_axes[i][j]
                     for label in (axes.get_xticklabels() + axes.get_yticklabels()):
@@ -231,10 +235,11 @@ class GolgiDetailWidget(QWidget):
                         # mask color bar label -> [0,1]
                         # cbar.ax.set_yticklabels([0, 1])
                         cbar.set_ticks([0, 1])
-                    if j == self.giantin_channel:
-                        axes.set_title("Giantin " + title)
-                    else:
-                        axes.set_title("C{} ".format(j + 1) + title)
+                    # if j == self.giantin_channel:
+                    #     axes.set_title("Giantin " + title)
+                    # else:
+                    #     axes.set_title("C{} ".format(j + 1) + title)
+                    axes.set_title(title, fontdict={'fontsize': font_size})
             self.plot_widget(static_canvas)
         except Exception as e:
             err_msg = "Error when show golgi mini-stacks details:{}".format(e)
@@ -268,40 +273,52 @@ class GolgiDetailWidget(QWidget):
                 if cur_widget is not None:
                     plotLayout.replaceWidget(cur_widget, canvas)
 
-    def show_averaged_w_plot(self, averaged_golgi):
+    def show_averaged_w_plot(self, averaged_golgi, num_ministacks):
         self.thread = QThread()
 
         self.backwork = Backwork(averaged_golgi)
         self.backwork.moveToThread(self.thread)
-        self.backwork.finished_signal.connect(lambda: self.backwork_finished_handler(averaged_golgi))
+        self.backwork.finished_signal.connect(lambda: self.backwork_finished_handler(averaged_golgi, num_ministacks))
         self.signal_backwork.connect(self.backwork.cal)
         self.thread.start()
         self.signal_backwork.emit()
 
-    def backwork_finished_handler(self, crop_data):
+    def backwork_finished_handler(self, crop_data, num_ministacks):
+        color_map = ["red", "green", "blue"]
+        empty_channel_list = []
         try:
             num_channel = crop_data.shape[-1]
             columns = num_channel + 1
             rows = 2
-            static_canvas = FigureCanvas(Figure(figsize=(3 * columns, 1 * rows)))
+            static_canvas = FigureCanvas(Figure(figsize=(2 * columns, 1 * rows)))
             subplot_axes = static_canvas.figure.subplots(rows, columns)
+            for i, name in enumerate(self.channel_name):
+                if name == "":
+                    empty_channel_list.append(i)
+                    subplot_axes[0][i].axis('off')
+                    subplot_axes[1][i].axis('off')
             static_canvas.figure.tight_layout(pad=0.6)
 
             golgi_x_axis_labels = np.arange(0, 701, 350)
             golgi_y_axis_labels = np.arange(700, -1, -350)
-            font_size = 9
+            font_size = 10
 
             # get plot data
             self.radial_mean_intensity_df_list, self.radius_list = self.backwork.get_data()
-            giantin_radius = self.radius_list[self.giantin_channel - 1]
+            giantin_radius = self.radius_list[self.giantin_channel]
+            normalized_radius = [i / giantin_radius for i in self.radius_list]
             for i, radius in enumerate(self.radius_list):
                 self.radial_mean_intensity_df_list[i]["normalized_radius"] = self.radial_mean_intensity_df_list[
                                                                                  i].index / giantin_radius
 
-            for j in range(columns - 1):
+            for j in range(num_channel):
+                # hide empty channel name
+                if self.channel_name[j] == "":
+                    continue
                 # show golgi
                 golgi_axes = subplot_axes[0][j]
-                golgi_axes.set_title("Channel {}".format(j + 1))
+                # golgi_axes.set_title("Channel {}".format(j + 1))
+                golgi_axes.set_title(self.channel_name[j], fontdict={'fontsize': font_size})
                 img_ = golgi_axes.imshow(crop_data[:, :, j])
                 cbar = static_canvas.figure.colorbar(img_, ax=golgi_axes)
 
@@ -319,25 +336,45 @@ class GolgiDetailWidget(QWidget):
                 # show plot
                 plot_axes = subplot_axes[1][j]
                 plot_axes.plot(self.radial_mean_intensity_df_list[j]["normalized_radius"],
-                               self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"])
+                               self.radial_mean_intensity_df_list[j]["normalized_mean_intensity"], c=color_map[j])
+                plot_axes.set_title("normalized radius={:.2f}".format(normalized_radius[j]),
+                                    fontdict={'fontsize': font_size})
                 for label in (plot_axes.get_xticklabels() + plot_axes.get_yticklabels()):
                     label.set_fontsize(font_size)
 
-            subplot_axes[0][-1].set_title("Merge")
+            subplot_axes[0][-1].set_title("merge (n={})".format(num_ministacks),
+                                          fontdict={'fontsize': font_size})
             merge_img = crop_data / np.amax(crop_data, axis=(0, 1))
+            if len(empty_channel_list) > 0:
+                empty_shape = merge_img.shape[:2]
+                empty_img = np.zeros(shape=empty_shape)
+                for empty_channel in empty_channel_list:
+                    merge_img[:, :, empty_channel] = empty_img
             if num_channel < 3:
                 empty_shape = merge_img.shape[:2] + (3 - num_channel,)
                 empty_img = np.zeros(shape=empty_shape)
                 merge_img = np.dstack([merge_img, empty_img])
             subplot_axes[0][-1].imshow(merge_img)
+            handles = [Rectangle((0, 0), 0, 0, label=i) for i in self.channel_name]
+
+            leg = subplot_axes[0][-1].legend(handles=handles, handlelength=0, handletextpad=0, loc='upper left',
+                                             bbox_to_anchor=(0.8, 1), fontsize='x-small')
+            for i, text in enumerate(leg.get_texts()):
+                text.set_color(color_map[i])
 
             for k in range(num_channel):
+                # hide empty channel name
+                if self.channel_name[k] == "":
+                    continue
                 subplot_axes[1][-1].plot(self.radial_mean_intensity_df_list[k]["normalized_radius"],
-                                         self.radial_mean_intensity_df_list[k]["normalized_mean_intensity"])
+                                         self.radial_mean_intensity_df_list[k]["normalized_mean_intensity"],
+                                         c=color_map[k], label=self.channel_name[k])
+            subplot_axes[1][-1].legend(labelcolor='linecolor', fontsize='small')
 
             for axes in subplot_axes[1]:
                 axes.set_xlabel("Distance from center")
-                axes.set_ylabel("Radial mean intensity")
+
+            subplot_axes[1][0].set_ylabel("Radial mean intensity")
 
             self.plot_widget(static_canvas)
             self.ui.btn_save.setEnabled(True)
