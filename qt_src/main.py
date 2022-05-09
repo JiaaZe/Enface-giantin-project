@@ -313,6 +313,7 @@ class MainWindow(QMainWindow):
         self.golgi_images = self.progress.get_golgi_images()
 
     def start(self):
+        self.selected_list = []
         try:
             self.ui.progress_text.clear()
             param_flag = self.get_write_param()
