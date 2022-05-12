@@ -8,7 +8,6 @@ from patchify import patchify
 from read_roi import read_roi_zip
 import copy
 import math
-from tensorflow.python.keras.utils.generic_utils import Progbar
 
 from matplotlib.patches import Ellipse
 

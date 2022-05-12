@@ -1,7 +1,6 @@
 import logging
 import os.path
 
-import cv2
 from tifffile import tifffile
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal

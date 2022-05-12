@@ -15,7 +15,7 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
-from qt_src.utils import get_logger
+from utils import get_logger
 from qt_ui.golgi_details_widget import Ui_Golgi_details
 from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, normalize_total_intensity, \
     shift_make_border, cal_radial_mean_intensity
