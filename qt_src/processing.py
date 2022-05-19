@@ -1,6 +1,7 @@
 import logging
 import os.path
 
+import cv2
 from tifffile import tifffile
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
@@ -163,6 +164,11 @@ class Progress(QObject):
         giantin_mask_list = []
         giantin_pred_list = []
         for i, contour in enumerate(contours):
+            contour_area = cv2.contourArea(contour)
+            # The reason of duplicate giantin: not full parts are predicted. After thresholding, it splited.
+            # Before, didn't control min area of contour area.
+            if contour_area < 0.5 * self.param_giantin_area_threshold:
+                continue
             sub_list = None
             rect_size = self.param_giantin_roi_size
             for _ in range(2):
