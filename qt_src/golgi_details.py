@@ -392,6 +392,8 @@ class GolgiDetailWidget(QWidget):
                                                                directory=os.path.join(self.save_directory,
                                                                                       "averaged_plot"),
                                                                filter='pdf (*.pdf);; png (*.png);;jpg (*.jpg)')
+            if save_type == "" and save_path == "":
+                return
             if save_type == "pdf (*.pdf)":
                 with PdfPages(save_path) as pdf:
                     pdf.savefig(canvas.figure, dpi=120)
@@ -413,7 +415,8 @@ class GolgiDetailWidget(QWidget):
                                                        directory=os.path.join(self.save_directory,
                                                                               "radial mean intensity"),
                                                        filter='xlsx (*.xlsx)')
-
+            if save_path == "":
+                return
             excel_writer = pd.ExcelWriter(save_path)
             for i, df in enumerate(self.radial_mean_intensity_df_list):
                 df.to_excel(excel_writer, sheet_name="C{}".format(i + 1))
