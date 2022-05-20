@@ -191,8 +191,13 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     :param overlapping: giantin channel have overlapping with other channel
     :return:
     """
+    # left top right bottom
+    edge_contour = [0, 0, 0, 0]
     golgi_h, golgi_w, golgi_c = golgi_image.shape
     x, y, w, h = cv2.boundingRect(contour)
+    if x == 0 or y == 0 or x + w == golgi_w - 1 or y + h == golgi_h - 1:
+        reject_msg = "Giantin is in the edge."
+        return None, None, None, None, False, sub_list, reject_msg
     max_size = max(w, h)
     if max_size >= rect_size:
         rect_size = (max_size // 10 + 1) * 10
@@ -208,6 +213,14 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
         rect_size = golgi_h - y0
     x1 = x0 + rect_size
     y1 = y0 + rect_size
+    if x0 == 0:
+        edge_contour[0] = 1
+    if y0 == 0:
+        edge_contour[1] = 1
+    if x1 == golgi_w - 1:
+        edge_contour[2] = 1
+    if y1 == golgi_h - 1:
+        edge_contour[3] = 1
     crop_golgi = np.copy(golgi_image[y0:y1, x0:x1, :])
     crop_mask = np.copy(pred_mask[y0:y1, x0:x1])
     if show_plt:
@@ -227,6 +240,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
         plt.imshow(crop_mask)
         plt.show()
     clear_golgi, giantin_mask, giantin_contour, flag, sub_list, reject_msg = check_golgi_crop(crop_golgi, crop_mask,
+                                                                                              edge_contour,
                                                                                               giantin_channel=giantin_channel,
                                                                                               blank_channel=blank_channel,
                                                                                               sub_list=sub_list,
@@ -301,13 +315,14 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     return clear_golgi, giantin_contour, crop_mask, giantin_mask, flag, sub_list, reject_msg
 
 
-def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_channel=-1, min_giantin_area=200,
-                     giantin_possibility_threshold=0.5, have_overlapping=True):
+def check_golgi_crop(golgi, pred_mask, edge_contour, giantin_channel, sub_list=None, blank_channel=-1,
+                     min_giantin_area=200, giantin_possibility_threshold=0.5, have_overlapping=True):
     """
     Check if selected giantin is availiable. Also do bgst.
     :param sub_list: Last time bgst value in each channel. None then first sub.
     :param golgi: golgi crop image [h,w,c]
     :param pred_mask:  crop model output
+    :param edge_contour:  if contour rect is close to the edge of img [left, top, right, bottom]
     :param giantin_channel:
     :param blank_channel:
     :param min_giantin_area: minimum area of giantin
@@ -525,6 +540,26 @@ def check_golgi_crop(golgi, pred_mask, giantin_channel, sub_list=None, blank_cha
                     c_x = contour[:, :, 0].reshape(-1, )
                     c_y = contour[:, :, 1].reshape(-1, )
                     if h - 1 in c_x or w - 1 in c_y or 0 in c_x or 0 in c_y:
+                        # right edge
+                        if h-1 in c_x and edge_contour[2]:
+                            reject_msg = "Contour in channel {} close to the right edge.".format(c_ + 1)
+                            ret_flag = False
+                            return copy_golgi, _, _, ret_flag, sub_list, reject_msg
+                        # bottom edge
+                        if w-1 in c_y and edge_contour[3]:
+                            reject_msg = "Contour in channel {} close to the bottom edge.".format(c_ + 1)
+                            ret_flag = False
+                            return copy_golgi, _, _, ret_flag, sub_list, reject_msg
+                        # left edge
+                        if 0 in c_x and edge_contour[0]:
+                            reject_msg = "Contour in channel {} close to the left edge.".format(c_ + 1)
+                            ret_flag = False
+                            return copy_golgi, _, _, ret_flag, sub_list, reject_msg
+                        # top edge
+                        if 0 in c_y and edge_contour[1]:
+                            reject_msg = "Contour in channel {} close to the top edge.".format(c_ + 1)
+                            ret_flag = False
+                            return copy_golgi, _, _, ret_flag, sub_list, reject_msg
                         if i == 0:
                             # the largest one near the edge
                             do_sub = True

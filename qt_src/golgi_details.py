@@ -156,6 +156,7 @@ class GolgiDetailWidget(QWidget):
                 pred = self.giantin_pred[:rect_size, :rect_size]
                 golgi, mask, contour, flag, sub_list, rej_msg = check_golgi_crop(crop_golgi,
                                                                                  pred,
+                                                                                 edge_contour=[0, 0, 0, 0],
                                                                                  giantin_channel=self.giantin_channel,
                                                                                  blank_channel=self.blank_channel,
                                                                                  sub_list=sub_list,
