@@ -519,16 +519,45 @@ class MainWindow(QMainWindow):
             self.logger.error("{}".format(e), exc_info=True)
 
     def save_golgi_stacks(self):
-        # save all golgi mini stacks
-        if self.ui.btn_pick.isChecked():
-            # pick_select
-            selected_shifted_golgi = np.array(self.shifted_crop_golgi_list)[self.selected_list]
-        else:
-            # drop_select
-            selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
-        self.save_golgi_dialog = DialogSave(selected_shifted_golgi, exp_name=self.exp_name,
-                                            save_directory=self.save_directory)
-        self.save_golgi_dialog.show()
+        try:
+            # save all golgi mini stacks
+            selected_shifted_golgi = None
+            if self.ui.btn_pick.isChecked():
+                # pick_select
+                for n in self.selected_dict.keys():
+                    selected_index = self.selected_dict[n]
+                    if selected_shifted_golgi is None:
+                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
+                    else:
+                        selected_shifted_golgi = np.append(selected_shifted_golgi,
+                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
+                                                           axis=0)
+            else:
+                # drop_select
+                if not bool(self.selected_dict):
+                    # selected_dict is empty
+                    for golgi_list in self.shifted_crop_golgi_list:
+                        if selected_shifted_golgi is None:
+                            selected_shifted_golgi = golgi_list
+                        else:
+                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
+                else:
+                    for n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
+                        if selected_shifted_golgi is None:
+                            selected_shifted_golgi = delete_np
+                        else:
+                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+            self.save_golgi_dialog = DialogSave(selected_shifted_golgi, exp_name=self.exp_name,
+                                                save_directory=self.save_directory)
+            self.save_golgi_dialog.show()
+        except Exception as e:
+            err_msg = "Saving mini-stacks Error: {}".format(e)
+            self.ui.progress_text.append(err_msg)
+            # go back to tab 1
+            self.ui.tabWidget.setCurrentIndex(0)
+            self.logger.error(err_msg, exc_info=True)
 
 
 if __name__ == '__main__':
