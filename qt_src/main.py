@@ -365,9 +365,6 @@ class MainWindow(QMainWindow):
         axes = event.inaxes
         if axes is None:
             return
-        # axes_id = self.axes_dict[hash(id(axes))]
-        if id(axes) not in self.axes_dict.keys():
-            return
         if len(axes.patches) > 0:
             axes.patches.pop()
             axes.patches.pop()
@@ -378,25 +375,53 @@ class MainWindow(QMainWindow):
             axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
             event.canvas.draw()
 
-        axes_id = self.axes_dict[id(axes)]
-        if axes_id in self.selected_list:
-            self.selected_list.remove(axes_id)
+        n, i = self.axes_index
+        if n in self.selected_dict.keys():
+            selected_list = self.selected_dict[n]
+            if i in selected_list:
+                selected_list.remove(i)
+            else:
+                selected_list.append(i)
+            if len(selected_list) > 0:
+                self.selected_dict[n] = selected_list
+            else:
+                self.selected_dict.pop(n)
         else:
-            self.selected_list.append(axes_id)
+            self.selected_dict[n] = [i]
+
+        cur_tab_index = self.ui.tabWidget_2.currentIndex()
+        widget_index = event.canvas.widget_num
+        for tab_index, tab_content in enumerate(self.result_golgi_content_list):
+            if tab_index != cur_tab_index and tab_content.isEnabled():
+                scroll_layout = tab_content.layout()
+                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
+                widget_grid_layout = cur_tab_scroll_content.layout()
+                canvas = widget_grid_layout.itemAt(widget_index).widget().layout().itemAt(0).widget()
+
+                axes = canvas.figure.axes[0]
+                if len(axes.patches) > 0:
+                    axes.patches.pop()
+                    axes.patches.pop()
+                else:
+                    ax_h, ax_w = 701, 701
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
+                canvas.draw()
 
     def subplot_right_click(self, event):
+        n, i = self.axes_index
         axes = event.inaxes
         if axes is None:
             return
         # axes_id = self.axes_dict[hash(id(axes))]
-        if id(axes) not in self.axes_dict.keys():
-            return
-        self.axes_id = self.axes_dict[id(axes)]
+        # if id(axes) not in self.axes_dict.keys():
+        #     return
+        # self.axes_id = self.axes_dict[id(axes)]
 
         self.popup_golgi_widget = GolgiDetailWidget("Golgi details", logger=self.logger,
-                                                    crop_golgi=self.crop_golgi_list[self.axes_id],
-                                                    giantin_mask=self.giantin_mask_list[self.axes_id],
-                                                    giantin_pred=self.giantin_pred_list[self.axes_id],
+                                                    crop_golgi=self.crop_golgi_list[n][i],
+                                                    giantin_mask=self.giantin_mask_list[n][i],
+                                                    giantin_pred=self.giantin_pred_list[n][i],
                                                     param_dict=self.param_dict,
                                                     save_directory=self.save_directory,
                                                     channel_name=self.get_cur_channel_name())
@@ -421,10 +446,8 @@ class MainWindow(QMainWindow):
         if event.button == 3:
             # mouse right click to open giantin details in new window
             self.subplot_right_click(event)
-            ...
         else:
             self.subplot_left_click(event)
-        print(self.selected_list)
 
     def show_golgi(self, c_name, tab_index=0):
         # clear old plot
