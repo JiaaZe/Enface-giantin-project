@@ -134,13 +134,13 @@ class Progress(QObject):
                     self.golgi_images[i],
                     pred_mask)
                 # crop golgi original image
-                self.crop_golgi_list.extend(selected_golgi_list)
+                self.crop_golgi_list.append(selected_golgi_list)
                 # shifted and resized crop golgi image
-                self.shifted_crop_golgi_list.extend(shifted_golgi_list)
+                self.shifted_crop_golgi_list.append(shifted_golgi_list)
                 # crop giantin mask
-                self.giantin_mask_list.extend(giantin_mask_list)
+                self.giantin_mask_list.append(giantin_mask_list)
                 # crop giantin pred
-                self.giantin_pred_crop_list.extend(giantin_pred_list)
+                self.giantin_pred_crop_list.append(giantin_pred_list)
 
             self.logger.info("Analyzing predicted giantin masks finished.")
             self.append_text.emit("Analyzing predicted giantin masks finished.")
