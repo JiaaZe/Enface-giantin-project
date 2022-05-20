@@ -419,67 +419,61 @@ class MainWindow(QMainWindow):
             self.subplot_left_click(event)
         print(self.selected_list)
 
-    def show_golgi(self):
+    def show_golgi(self, c_name, tab_index=0):
         # clear old plot
-        self.ui.scroll_golgi_content = QWidget()
-        self.ui.scroll_golgi.setWidget(self.ui.scroll_golgi_content)
+        cur_tab = self.result_golgi_tab_list[tab_index]
+        self.ui.tabWidget_2.setTabText(tab_index, c_name)
+        if c_name == "":
+            self.ui.tabWidget_2.setTabEnabled(tab_index, False)
+        else:
+            self.ui.tabWidget_2.setTabEnabled(tab_index, True)
 
-        for i, crop_golgi in enumerate(self.shifted_crop_golgi_list):
-            if crop_golgi.shape[-1] == 2:
-                empty_shape = crop_golgi.shape[:2] + (1,)
-                empty_img = np.zeros(shape=empty_shape)
-                self.shifted_crop_golgi_list[i] = np.dstack([crop_golgi, empty_img])
-        giantin_list = np.array(self.shifted_crop_golgi_list)[:, :, :, self.param_dict["param_giantin_channel"]]
-        num_giantin = giantin_list.shape[0]
-        qScrollLayout = QVBoxLayout()
-        qfigWidget = QWidget()
+        cur_tab_scroll_content = QWidget()
+        cur_tab.setWidget(self.result_golgi_content_list[tab_index])
 
-        columns = 4
-        rows = int(num_giantin / columns + 1)
-        static_canvas = FigureCanvas(Figure(figsize=(1.7 * columns, 1.7 * rows)))
-        static_canvas.mpl_connect('button_press_event', self.subplot_onclick_handler)
-
-        axes_dict = {}
-        subplot_axes = static_canvas.figure.subplots(rows, columns)
-        static_canvas.figure.tight_layout()
-        static_canvas.figure.subplots_adjust(hspace=0.3)
-
-        x_axis_labels = np.arange(0, 701, 350)
-        y_axis_labels = np.arange(700, -1, -350)
         font_size = 9
-        for i, axes in enumerate(subplot_axes.reshape(-1)):
-            if i >= num_giantin:
-                axes.axis("off")
-            else:
-                for label in (axes.get_xticklabels() + axes.get_yticklabels()):
+        content_gridlayout = QGridLayout(cur_tab_scroll_content)
+        columns_per_row = 4
+        widget_count = 0
+        for n, shifted_crop_golgi_list in enumerate(self.shifted_crop_golgi_list):
+            for i, crop_golgi in enumerate(shifted_crop_golgi_list):
+                if crop_golgi.shape[-1] == 2:
+                    empty_shape = crop_golgi.shape[:2] + (1,)
+                    empty_img = np.zeros(shape=empty_shape)
+                    self.shifted_crop_golgi_list[n][i] = np.dstack([crop_golgi, empty_img])
+
+                row = int(widget_count / columns_per_row)
+                column = widget_count % columns_per_row
+                square_widget = SquareWidget(cur_tab_scroll_content)
+
+                index = [n, i]
+                canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                widget_count += 1
+                canvas.mpl_connect('button_press_event',
+                                   lambda event: self.subplot_onclick_handler(event))
+                ax = canvas.figure.subplots()
+                canvas.figure.tight_layout()
+                img_ = ax.imshow(crop_golgi[:, :, tab_index])
+                for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                     label.set_fontsize(font_size)
-                # key = hash(id(axes))
-                key = id(axes)
-                axes_dict[key] = i
-                img = giantin_list[i]
-                axes.set_xlim(np.min(x_axis_labels), np.max(x_axis_labels))
-                axes.set_ylim(np.max(y_axis_labels), np.min(y_axis_labels))
-                axes.set_xticks(x_axis_labels)
-                axes.set_yticks(y_axis_labels)
-                img_ = axes.imshow(img)
-                cbar = static_canvas.figure.colorbar(img_, ax=axes)
+                cbar = canvas.figure.colorbar(img_, ax=ax)
                 for t in cbar.ax.get_yticklabels():
                     t.set_fontsize(font_size)
-                if i in self.selected_list:
-                    # keep original selected
-                    ax_h, ax_w = 701, 701
-                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
-                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
-        self.axes_dict = axes_dict
 
-        static_canvas.draw()
-        plotLayout = QVBoxLayout()
-        plotLayout.addWidget(static_canvas)
-        qfigWidget.setLayout(plotLayout)
-        static_canvas.setMinimumSize(static_canvas.size())
-        qScrollLayout.addWidget(qfigWidget)
-        self.ui.scroll_golgi_content.setLayout(qScrollLayout)
-        self.ui.scroll_golgi_content.show()
+                layout = QVBoxLayout()
+                layout.addWidget(canvas)
+
+                square_widget.setLayout(layout)
+
+                content_gridlayout.addWidget(square_widget, row, column, 1, 1)
+
+        scroll_layout = QVBoxLayout()
+        cur_tab_scroll_content.setLayout(content_gridlayout)
+        cur_tab_scroll_content.setStyleSheet("background:white")
+        scroll_layout.addWidget(cur_tab_scroll_content)
+
+        self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
+        self.result_golgi_content_list[tab_index].show()
 
     def show_averaged(self):
         try:
