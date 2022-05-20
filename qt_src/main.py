@@ -6,7 +6,7 @@ import re
 import numpy as np
 from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
-from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout
 
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
@@ -50,6 +50,10 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.ui.tabWidget.setCurrentIndex(0)
+        self.result_golgi_content_list = [self.ui.scroll_golgi_content1,
+                                          self.ui.scroll_golgi_content2,
+                                          self.ui.scroll_golgi_content3]
+        self.result_golgi_tab_list = [self.ui.tab_scroll_golgi1, self.ui.tab_scroll_golgi2, self.ui.tab_scroll_golgi3]
 
         # tab 1
         # image folder path list view
@@ -95,10 +99,9 @@ class MainWindow(QMainWindow):
 
         # tab 2
         self.scroll_golgi_content = None
-        self.axes_id = None
+        self.axes_index = None
 
-        self.axes_dict = {}
-        self.selected_list = []
+        self.selected_dict = {}
         self.crop_golgi_list = []
         self.shifted_crop_golgi_list = []
         self.giantin_mask_list = []
@@ -290,16 +293,20 @@ class MainWindow(QMainWindow):
         self.model = self.progress.get_model()
         self.pred_data = self.progress.get_pred_data()
         self.golgi_images = self.progress.get_golgi_images()
-        self.crop_golgi_list, self.shifted_crop_golgi_list, \
-        self.giantin_mask_list, self.giantin_pred_list = self.progress.get_crop_golgi()
+        self.crop_golgi_list, self.shifted_crop_golgi_list, self.giantin_mask_list, self.giantin_pred_list \
+            = self.progress.get_crop_golgi()
         if len(self.crop_golgi_list) == 0:
             self.update_message("No satisfied giantin found. Try to use ImageJ manually.")
             return
         try:
             # show result in tab2
-            self.show_golgi()
+            c1_name, c2_name, c3_name = self.get_cur_channel_name()
+            self.show_golgi(c1_name, 0)
+            self.show_golgi(c2_name, 1)
+            self.show_golgi(c3_name, 2)
             # go to tab2
             self.ui.tabWidget.setCurrentIndex(1)
+            self.ui.tabWidget_2.setCurrentIndex(self.param_dict["param_giantin_channel"])
             self.ui.btn_show_avergaed.setEnabled(True)
         except Exception as e:
             self.pred_flag = True
@@ -313,7 +320,7 @@ class MainWindow(QMainWindow):
         self.golgi_images = self.progress.get_golgi_images()
 
     def start(self):
-        self.selected_list = []
+        self.selected_dict = {}
         try:
             self.ui.progress_text.clear()
             param_flag = self.get_write_param()
