@@ -482,21 +482,41 @@ class MainWindow(QMainWindow):
         self.ui.scroll_golgi_content.show()
 
     def show_averaged(self):
-        if self.ui.btn_pick.isChecked():
-            # pick_select
-            selected_shifted_golgi = np.array(self.shifted_crop_golgi_list)[self.selected_list]
-        else:
-            # drop_select
-            selected_shifted_golgi = np.delete(np.array(self.shifted_crop_golgi_list), self.selected_list, axis=0)
-        averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
-        num_selected = selected_shifted_golgi.shape[0]
-        self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
-                                                save_directory=self.save_directory,
-                                                param_dict=
-                                                {"param_giantin_channel": self.param_dict["param_giantin_channel"]},
-                                                channel_name=self.get_cur_channel_name())
-        self.popup_averaged.show()
-        self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi, num_ministacks=num_selected)
+        try:
+            selected_shifted_golgi = None
+            if self.ui.btn_pick.isChecked():
+                # pick_select
+                for n in self.selected_dict.keys():
+                    selected_index = self.selected_dict[n]
+                    if selected_shifted_golgi is None:
+                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
+                    else:
+                        selected_shifted_golgi = np.append(selected_shifted_golgi,
+                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
+                                                           axis=0)
+            else:
+                # drop_select
+                for n in self.selected_dict.keys():
+                    selected_index = self.selected_dict[n]
+                    delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
+                    if selected_shifted_golgi is None:
+                        selected_shifted_golgi = delete_np
+                    else:
+                        selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+            averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
+            num_selected = len(selected_shifted_golgi)
+            self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
+                                                    save_directory=self.save_directory,
+                                                    param_dict=
+                                                    {"param_giantin_channel": self.param_dict["param_giantin_channel"]},
+                                                    channel_name=self.get_cur_channel_name())
+            self.popup_averaged.show()
+            self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi, num_ministacks=num_selected)
+        except Exception as e:
+            self.ui.progress_text.append("Averaging mini-stacks Error: {}".format(e))
+            # go back to tab 1
+            self.ui.tabWidget.setCurrentIndex(0)
+            self.logger.error("{}".format(e), exc_info=True)
 
     def save_golgi_stacks(self):
         # save all golgi mini stacks
