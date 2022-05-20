@@ -2,9 +2,12 @@ import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QContextMenuEvent, QCursor
+from PyQt5.QtGui import QContextMenuEvent, QCursor
 from PyQt5.QtWidgets import QListWidget, QFileDialog, QListView, QAbstractItemView, QTreeView, QWidget, QMenu, QAction
+
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 
 
 def open_file_dialog(mode=1, filetype_list=[], folder=""):
@@ -135,6 +138,21 @@ class MyWidget(QWidget):
         openAction.triggered.connect(self.menu_action_func)
         self.menu.addAction(openAction)
         self.menu.popup(QCursor.pos())
+
+
+class SquareWidget(QWidget):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        h_size, w_size = 270, 220
+        self.setFixedSize(QtCore.QSize(h_size, w_size))
+        self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+
+
+class MyCanvas(FigureCanvas):
+    def __init__(self, figure=None, index=None, widget_num=None):
+        super().__init__(figure=figure)
+        self.index = index
+        self.widget_num = widget_num
 
 
 def get_logger():
