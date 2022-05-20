@@ -496,13 +496,21 @@ class MainWindow(QMainWindow):
                                                            axis=0)
             else:
                 # drop_select
-                for n in self.selected_dict.keys():
-                    selected_index = self.selected_dict[n]
-                    delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                    if selected_shifted_golgi is None:
-                        selected_shifted_golgi = delete_np
-                    else:
-                        selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+                if not bool(self.selected_dict):
+                    # selected_dict is empty
+                    for golgi_list in self.shifted_crop_golgi_list:
+                        if selected_shifted_golgi is None:
+                            selected_shifted_golgi = golgi_list
+                        else:
+                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
+                else:
+                    for n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
+                        if selected_shifted_golgi is None:
+                            selected_shifted_golgi = delete_np
+                        else:
+                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
             averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
             num_selected = len(selected_shifted_golgi)
             self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
@@ -513,10 +521,11 @@ class MainWindow(QMainWindow):
             self.popup_averaged.show()
             self.popup_averaged.show_averaged_w_plot(averaged_golgi=averaged_golgi, num_ministacks=num_selected)
         except Exception as e:
-            self.ui.progress_text.append("Averaging mini-stacks Error: {}".format(e))
+            err_msg = "Averaging mini-stacks Error: {}".format(e)
+            self.ui.progress_text.append(err_msg)
             # go back to tab 1
             self.ui.tabWidget.setCurrentIndex(0)
-            self.logger.error("{}".format(e), exc_info=True)
+            self.logger.error(err_msg, exc_info=True)
 
     def save_golgi_stacks(self):
         try:
