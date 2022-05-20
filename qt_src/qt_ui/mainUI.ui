@@ -14,11 +14,11 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_8">
+   <layout class="QGridLayout" name="gridLayout_12">
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_start">
        <attribute name="title">
@@ -961,7 +961,7 @@ with other channels</string>
        <attribute name="title">
         <string>Result</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_12">
+       <layout class="QGridLayout" name="gridLayout_8">
         <item row="0" column="0">
          <widget class="QFrame" name="frame">
           <property name="frameShape">
@@ -1019,25 +1019,99 @@ with other channels</string>
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QScrollArea" name="scroll_golgi">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>149</height>
-           </size>
+         <widget class="QTabWidget" name="tabWidget_2">
+          <property name="currentIndex">
+           <number>2</number>
           </property>
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="scroll_golgi_content">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1068</width>
-             <height>621</height>
-            </rect>
-           </property>
+          <widget class="QWidget" name="result_tab1">
+           <attribute name="title">
+            <string>Tab 1</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="0">
+             <widget class="QScrollArea" name="tab_scroll_golgi1">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>149</height>
+               </size>
+              </property>
+              <property name="widgetResizable">
+               <bool>true</bool>
+              </property>
+              <widget class="QWidget" name="scroll_golgi_content1">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1044</width>
+                 <height>574</height>
+                </rect>
+               </property>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="result_tab2">
+           <attribute name="title">
+            <string>Tab 2</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_14">
+            <item row="0" column="0">
+             <widget class="QScrollArea" name="tab_scroll_golgi2">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>149</height>
+               </size>
+              </property>
+              <property name="widgetResizable">
+               <bool>true</bool>
+              </property>
+              <widget class="QWidget" name="scroll_golgi_content2">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1044</width>
+                 <height>574</height>
+                </rect>
+               </property>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="result_tab3">
+           <attribute name="title">
+            <string>Page</string>
+           </attribute>
+           <layout class="QGridLayout" name="gridLayout_15">
+            <item row="0" column="0">
+             <widget class="QScrollArea" name="tab_scroll_golgi3">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>149</height>
+               </size>
+              </property>
+              <property name="widgetResizable">
+               <bool>true</bool>
+              </property>
+              <widget class="QWidget" name="scroll_golgi_content3">
+               <property name="geometry">
+                <rect>
+                 <x>0</x>
+                 <y>0</y>
+                 <width>1044</width>
+                 <height>574</height>
+                </rect>
+               </property>
+              </widget>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
