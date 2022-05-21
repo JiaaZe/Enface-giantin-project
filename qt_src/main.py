@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
     start_backgroung_work = Signal()
     last_path_str = ""
     last_giantin_channel = ""
+    font_size = 9
 
     def __init__(self):
         super().__init__()
@@ -100,6 +101,7 @@ class MainWindow(QMainWindow):
         # tab 2
         self.scroll_golgi_content = None
         self.axes_index = None
+        self.axes_index_num = None
 
         self.selected_dict = {}
         self.crop_golgi_list = []
@@ -431,16 +433,51 @@ class MainWindow(QMainWindow):
 
     def update_sub_data(self):
         new_crop, new_shifted_golgi, new_mask, new_pred = self.popup_golgi_widget.get_new_data()
+        n, i = self.axes_index
         if new_shifted_golgi is not None:
-            self.crop_golgi_list[self.axes_id] = new_crop
-            self.giantin_mask_list[self.axes_id] = new_mask
-            self.shifted_crop_golgi_list[self.axes_id] = new_shifted_golgi
-            self.giantin_pred_list[self.axes_id] = new_pred
+            self.crop_golgi_list[n][i] = new_crop
+            self.giantin_mask_list[n][i] = new_mask
+            self.shifted_crop_golgi_list[n][i] = new_shifted_golgi
+            self.giantin_pred_list[n][i] = new_pred
         self.popup_golgi_widget.close()
-        self.show_golgi()
+        self.update_all_tab_widget()
+
+    def update_all_tab_widget(self):
+        widget_index = self.axes_index_num
+        n, i = self.axes_index
+        for tab_index, tab_content in enumerate(self.result_golgi_content_list):
+            if tab_content.isEnabled():
+                scroll_layout = tab_content.layout()
+                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
+                widget_grid_layout = cur_tab_scroll_content.layout()
+                square_widget_old = widget_grid_layout.itemAt(widget_index).widget()
+                square_widget_new = SquareWidget(cur_tab_scroll_content)
+                canvas_old = square_widget_old.layout().itemAt(0).widget()
+                index = canvas_old.index
+                widget_count = canvas_old.widget_num
+
+                canvas_new = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                canvas_new.figure.tight_layout()
+                canvas_new.mpl_connect('button_press_event', lambda event: self.subplot_onclick_handler(event))
+
+                ax = canvas_new.figure.subplots()
+                img_ = ax.imshow(self.shifted_crop_golgi_list[n][i][:, :, tab_index])
+                for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+                    label.set_fontsize(self.font_size)
+                cbar = canvas_new.figure.colorbar(img_, ax=ax)
+                for t in cbar.ax.get_yticklabels():
+                    t.set_fontsize(self.font_size)
+
+                layout = QVBoxLayout()
+                layout.addWidget(canvas_new)
+                square_widget_new.setLayout(layout)
+
+                widget_grid_layout.replaceWidget(square_widget_old, square_widget_new)
 
     def subplot_onclick_handler(self, event):
-        print('you pressed', event.button, event.xdata, event.ydata)
+        self.axes_index = event.canvas.index
+        self.axes_index_num = event.canvas.widget_num
+        # print('you pressed', event.button, event.xdata, event.ydata)
         # MouseButton.Left: 1
         # MouseButton.Right: 3
         if event.button == 3:
@@ -461,7 +498,6 @@ class MainWindow(QMainWindow):
         cur_tab_scroll_content = QWidget()
         cur_tab.setWidget(self.result_golgi_content_list[tab_index])
 
-        font_size = 9
         content_gridlayout = QGridLayout(cur_tab_scroll_content)
         columns_per_row = 4
         widget_count = 0
@@ -485,10 +521,10 @@ class MainWindow(QMainWindow):
                 canvas.figure.tight_layout()
                 img_ = ax.imshow(crop_golgi[:, :, tab_index])
                 for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-                    label.set_fontsize(font_size)
+                    label.set_fontsize(self.font_size)
                 cbar = canvas.figure.colorbar(img_, ax=ax)
                 for t in cbar.ax.get_yticklabels():
-                    t.set_fontsize(font_size)
+                    t.set_fontsize(self.font_size)
 
                 layout = QVBoxLayout()
                 layout.addWidget(canvas)
