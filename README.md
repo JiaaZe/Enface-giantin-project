@@ -1,13 +1,13 @@
 # Enface_giantin_project
 
 ## INTRODUCTION
-- Build application file:
+- Build application file from source code:
    - `cd qt_src`
    - `pyinstaller --noconfirm --distpath ../exe --workpath ../exe/build enfaceTool.spec`
 
 ## Version v2.0
- 1.  Optimize the result panel fluency.
-2.  Add multiple tabs in result panel for different protein channel.
+1. Optimize the result panel fluency.
+2. Add multiple tabs in result panel for different protein channel.
 
 ## Next Version
 1.  Save ROI file of a single mini-stack.
