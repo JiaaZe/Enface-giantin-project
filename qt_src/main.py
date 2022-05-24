@@ -495,10 +495,10 @@ class MainWindow(QMainWindow):
         else:
             self.ui.tabWidget_2.setTabEnabled(tab_index, True)
 
-        cur_tab_scroll_content = QWidget()
+        whole_figure_widget = QWidget()
         cur_tab.setWidget(self.result_golgi_content_list[tab_index])
 
-        content_gridlayout = QGridLayout(cur_tab_scroll_content)
+        content_gridlayout = QGridLayout(whole_figure_widget)
         columns_per_row = 4
         widget_count = 0
         for n, shifted_crop_golgi_list in enumerate(self.shifted_crop_golgi_list):
@@ -510,7 +510,7 @@ class MainWindow(QMainWindow):
 
                 row = int(widget_count / columns_per_row)
                 column = widget_count % columns_per_row
-                square_widget = SquareWidget(cur_tab_scroll_content)
+                square_widget = SquareWidget(whole_figure_widget)
 
                 index = [n, i]
                 canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
@@ -534,9 +534,9 @@ class MainWindow(QMainWindow):
                 content_gridlayout.addWidget(square_widget, row, column, 1, 1)
 
         scroll_layout = QVBoxLayout()
-        cur_tab_scroll_content.setLayout(content_gridlayout)
-        cur_tab_scroll_content.setStyleSheet("background:white")
-        scroll_layout.addWidget(cur_tab_scroll_content)
+        whole_figure_widget.setLayout(content_gridlayout)
+        whole_figure_widget.setStyleSheet("background:white")
+        scroll_layout.addWidget(whole_figure_widget)
 
         self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
         self.result_golgi_content_list[tab_index].show()
