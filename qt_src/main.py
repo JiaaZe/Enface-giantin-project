@@ -496,9 +496,11 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget_2.setTabEnabled(tab_index, True)
 
         whole_figure_widget = QWidget()
-        cur_tab.setWidget(self.result_golgi_content_list[tab_index])
+        # print("============{}==========".format(tab_index))
+        # print("whole_figure_widget {}".format(id(whole_figure_widget)))
 
         content_gridlayout = QGridLayout(whole_figure_widget)
+        # print("content_gridlayout {}".format(id(content_gridlayout)))
         columns_per_row = 4
         widget_count = 0
         for n, shifted_crop_golgi_list in enumerate(self.shifted_crop_golgi_list):
@@ -533,12 +535,22 @@ class MainWindow(QMainWindow):
 
                 content_gridlayout.addWidget(square_widget, row, column, 1, 1)
 
-        scroll_layout = QVBoxLayout()
         whole_figure_widget.setLayout(content_gridlayout)
         whole_figure_widget.setStyleSheet("background:white")
-        scroll_layout.addWidget(whole_figure_widget)
 
-        self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
+        temp_layout = self.result_golgi_content_list[tab_index].layout()
+        if temp_layout is not None:
+            # print("content layout {}".format(id(temp_layout)))
+            item_widget = temp_layout.itemAt(0).widget()
+            # print("item_widget {}".format(id(item_widget)))
+            temp_layout.removeWidget(item_widget)
+            temp_layout.addWidget(whole_figure_widget)
+            item_widget.deleteLater()
+        else:
+            scroll_layout = QVBoxLayout(self.result_golgi_content_list[tab_index])
+            # print("scroll_layout {}".format(id(scroll_layout)))
+            scroll_layout.addWidget(whole_figure_widget)
+            self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
         self.result_golgi_content_list[tab_index].show()
 
     def show_averaged(self):
