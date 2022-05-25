@@ -5,7 +5,7 @@ import re
 
 import numpy as np
 from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
-from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
+from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator, QFont
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout
 
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
@@ -643,6 +643,10 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    ratio = app.primaryScreen().logicalDotsPerInch() / 96
+    new_font_size = 9 / ratio + 0.5
+    newFont = QFont("Segoe UI", new_font_size)
+    app.setFont(newFont)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
