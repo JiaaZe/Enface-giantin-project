@@ -571,6 +571,8 @@ class MainWindow(QMainWindow):
                 if not bool(self.selected_dict):
                     # selected_dict is empty
                     for golgi_list in self.shifted_crop_golgi_list:
+                        if len(golgi_list) == 0:
+                            continue
                         if selected_shifted_golgi is None:
                             selected_shifted_golgi = golgi_list
                         else:
