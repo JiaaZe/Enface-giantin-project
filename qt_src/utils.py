@@ -143,16 +143,18 @@ class MyWidget(QWidget):
 class SquareWidget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
-        h_size, w_size = 270, 220
+        h_size, w_size = 290, 230
         self.setFixedSize(QtCore.QSize(h_size, w_size))
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
 
 class MyCanvas(FigureCanvas):
-    def __init__(self, figure=None, index=None, widget_num=None):
+    def __init__(self, figure=None, index=None, row=None, col=None, clicked=False):
         super().__init__(figure=figure)
         self.index = index
-        self.widget_num = widget_num
+        self.row = row
+        self.col = col
+        self.clicked = clicked
 
 
 def get_logger():

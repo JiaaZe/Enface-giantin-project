@@ -6,9 +6,8 @@ import re
 import numpy as np
 from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
-from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout, QGroupBox
 
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
@@ -26,7 +25,7 @@ class MainWindow(QMainWindow):
     start_backgroung_work = Signal()
     last_path_str = ""
     last_giantin_channel = ""
-    font_size = 9
+    font_size = 8
 
     def __init__(self):
         super().__init__()
@@ -67,6 +66,10 @@ class MainWindow(QMainWindow):
         self.ui.btn_image_clear.clicked.connect(lambda: self.listview_image_path.clear())
         self.ui.btn_image_remove.clicked.connect(lambda: self.listview_image_path.remove_items())
 
+        # each tab's group list
+        self.tab_group_list = []
+        self.tif_name_list = []
+
         def btn_browse_handler():
             path_list = open_file_dialog(mode=1)
             self.listview_image_path.addItems(path_list)
@@ -101,7 +104,6 @@ class MainWindow(QMainWindow):
         # tab 2
         self.scroll_golgi_content = None
         self.axes_index = None
-        self.axes_index_num = None
 
         self.selected_dict = {}
         self.crop_golgi_list = []
@@ -295,6 +297,9 @@ class MainWindow(QMainWindow):
         self.model = self.progress.get_model()
         self.pred_data = self.progress.get_pred_data()
         self.golgi_images = self.progress.get_golgi_images()
+        tmp_tif_name_list = self.progress.get_tif_name_list()
+        if len(tmp_tif_name_list) > 0:
+            self.tif_name_list = tmp_tif_name_list
         self.crop_golgi_list, self.shifted_crop_golgi_list, self.giantin_mask_list, self.giantin_pred_list \
             = self.progress.get_crop_golgi()
         if len(self.crop_golgi_list) == 0:
@@ -303,6 +308,7 @@ class MainWindow(QMainWindow):
         try:
             # show result in tab2
             c1_name, c2_name, c3_name = self.get_cur_channel_name()
+            self.tab_group_list = []
             self.show_golgi(c1_name, 0)
             self.show_golgi(c2_name, 1)
             self.show_golgi(c3_name, 2)
@@ -376,6 +382,7 @@ class MainWindow(QMainWindow):
             axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
             axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
             event.canvas.draw()
+        event.canvas.clicked = not event.canvas.clicked
 
         n, i = self.axes_index
         if n in self.selected_dict.keys():
@@ -392,14 +399,11 @@ class MainWindow(QMainWindow):
             self.selected_dict[n] = [i]
 
         cur_tab_index = self.ui.tabWidget_2.currentIndex()
-        widget_index = event.canvas.widget_num
         for tab_index, tab_content in enumerate(self.result_golgi_content_list):
             if tab_index != cur_tab_index and tab_content.isEnabled():
-                scroll_layout = tab_content.layout()
-                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
-                widget_grid_layout = cur_tab_scroll_content.layout()
-                canvas = widget_grid_layout.itemAt(widget_index).widget().layout().itemAt(0).widget()
-
+                group_box = self.tab_group_list[tab_index][n]
+                canvas = group_box.layout().itemAt(i).widget().layout().itemAt(0).widget()
+                canvas.clicked = not canvas.clicked
                 axes = canvas.figure.axes[0]
                 if len(axes.patches) > 0:
                     axes.patches.pop()
@@ -415,11 +419,6 @@ class MainWindow(QMainWindow):
         axes = event.inaxes
         if axes is None:
             return
-        # axes_id = self.axes_dict[hash(id(axes))]
-        # if id(axes) not in self.axes_dict.keys():
-        #     return
-        # self.axes_id = self.axes_dict[id(axes)]
-
         self.popup_golgi_widget = GolgiDetailWidget("Golgi details", logger=self.logger,
                                                     crop_golgi=self.crop_golgi_list[n][i],
                                                     giantin_mask=self.giantin_mask_list[n][i],
@@ -439,24 +438,27 @@ class MainWindow(QMainWindow):
             self.giantin_mask_list[n][i] = new_mask
             self.shifted_crop_golgi_list[n][i] = new_shifted_golgi
             self.giantin_pred_list[n][i] = new_pred
+        # not sure
+        self.popup_golgi_widget.setVisible(False)
         self.popup_golgi_widget.close()
         self.update_all_tab_widget()
 
     def update_all_tab_widget(self):
-        widget_index = self.axes_index_num
+        # widget_index = self.axes_index_num
         n, i = self.axes_index
         for tab_index, tab_content in enumerate(self.result_golgi_content_list):
             if tab_content.isEnabled():
-                scroll_layout = tab_content.layout()
-                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
-                widget_grid_layout = cur_tab_scroll_content.layout()
-                square_widget_old = widget_grid_layout.itemAt(widget_index).widget()
-                square_widget_new = SquareWidget(cur_tab_scroll_content)
-                canvas_old = square_widget_old.layout().itemAt(0).widget()
+                group_box = self.tab_group_list[tab_index][n]
+                group_box_gridlayout = group_box.layout()
+                square_widget_old = group_box_gridlayout.itemAt(i).widget()
+                square_widget_layout = square_widget_old.layout()
+                canvas_old = square_widget_layout.itemAt(0).widget()
                 index = canvas_old.index
-                widget_count = canvas_old.widget_num
+                row = canvas_old.row
+                col = canvas_old.col
+                old_clicked = canvas_old.clicked
 
-                canvas_new = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                canvas_new = MyCanvas(Figure(figsize=(3, 5)), index=index, row=row, col=col)
                 canvas_new.figure.tight_layout()
                 canvas_new.mpl_connect('button_press_event', lambda event: self.subplot_onclick_handler(event))
 
@@ -468,15 +470,20 @@ class MainWindow(QMainWindow):
                 for t in cbar.ax.get_yticklabels():
                     t.set_fontsize(self.font_size)
 
-                layout = QVBoxLayout()
-                layout.addWidget(canvas_new)
-                square_widget_new.setLayout(layout)
+                if old_clicked:
+                    canvas_new.clicked = True
+                    axes = canvas_new.figure.axes[0]
+                    ax_h, ax_w = 701, 701
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
+                    canvas_new.draw()
 
-                widget_grid_layout.replaceWidget(square_widget_old, square_widget_new)
+                square_widget_layout.removeWidget(canvas_old)
+                canvas_old.deleteLater()
+                square_widget_layout.addWidget(canvas_new)
 
     def subplot_onclick_handler(self, event):
         self.axes_index = event.canvas.index
-        self.axes_index_num = event.canvas.widget_num
         # print('you pressed', event.button, event.xdata, event.ydata)
         # MouseButton.Left: 1
         # MouseButton.Right: 3
@@ -499,11 +506,16 @@ class MainWindow(QMainWindow):
         # print("============{}==========".format(tab_index))
         # print("whole_figure_widget {}".format(id(whole_figure_widget)))
 
-        content_gridlayout = QGridLayout(whole_figure_widget)
+        content_vboxlayout = QVBoxLayout(whole_figure_widget)
         # print("content_gridlayout {}".format(id(content_gridlayout)))
         columns_per_row = 4
-        widget_count = 0
+        group_list = []
         for n, shifted_crop_golgi_list in enumerate(self.shifted_crop_golgi_list):
+            widget_count = 0
+            group_box = QGroupBox()
+            group_box.setTitle(self.tif_name_list[n])
+            group_box.setStyleSheet("background:white;border: 0.5px solid white;")
+            group_gridlayout = QGridLayout(group_box)
             for i, crop_golgi in enumerate(shifted_crop_golgi_list):
                 if crop_golgi.shape[-1] == 2:
                     empty_shape = crop_golgi.shape[:2] + (1,)
@@ -515,7 +527,7 @@ class MainWindow(QMainWindow):
                 square_widget = SquareWidget(whole_figure_widget)
 
                 index = [n, i]
-                canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, row=row, col=column)
                 widget_count += 1
                 canvas.mpl_connect('button_press_event',
                                    lambda event: self.subplot_onclick_handler(event))
@@ -533,10 +545,12 @@ class MainWindow(QMainWindow):
 
                 square_widget.setLayout(layout)
 
-                content_gridlayout.addWidget(square_widget, row, column, 1, 1)
+                group_gridlayout.addWidget(square_widget, row, column, 1, 1)
+            group_list.append(group_box)
+            content_vboxlayout.addWidget(group_box)
+        self.tab_group_list.append(group_list)
 
-        whole_figure_widget.setLayout(content_gridlayout)
-        whole_figure_widget.setStyleSheet("background:white")
+        whole_figure_widget.setLayout(content_vboxlayout)
 
         temp_layout = self.result_golgi_content_list[tab_index].layout()
         if temp_layout is not None:
@@ -571,18 +585,22 @@ class MainWindow(QMainWindow):
                 if not bool(self.selected_dict):
                     # selected_dict is empty
                     for golgi_list in self.shifted_crop_golgi_list:
+                        if len(golgi_list) == 0:
+                            continue
                         if selected_shifted_golgi is None:
                             selected_shifted_golgi = golgi_list
                         else:
                             selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
                 else:
-                    for n in self.selected_dict.keys():
-                        selected_index = self.selected_dict[n]
-                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = delete_np
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+                    selected_shifted_golgi = []
+                    for n, golgi_list in enumerate(self.shifted_crop_golgi_list):
+                        if n in self.selected_dict.keys():
+                            selected_index = self.selected_dict[n]
+                            aft_del_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
+                            if len(aft_del_np) > 0:
+                                selected_shifted_golgi.extend(aft_del_np)
+                        elif len(golgi_list) > 0:
+                            selected_shifted_golgi.extend(np.array(golgi_list))
             averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
             num_selected = len(selected_shifted_golgi)
             self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,

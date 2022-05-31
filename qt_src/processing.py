@@ -5,7 +5,7 @@ import cv2
 from tifffile import tifffile
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
-from tensorflow.python.keras.models import load_model
+from keras.models import load_model
 
 from metrics import *
 from image_functions import *
@@ -41,6 +41,7 @@ class Progress(QObject):
         self.shifted_crop_golgi_list = []
         self.giantin_mask_list = []
         self.giantin_pred_crop_list = []
+        self.image_name_list=[]
 
         self.model = None
         if model is not None:
@@ -53,7 +54,7 @@ class Progress(QObject):
         try:
             if self.pred_flag:
                 # read images
-                tif_path_list = []
+                tif_name_list = []
                 golgi_image_list = []
                 giantin_image_list = []
                 for path in self.image_path_list:
@@ -62,17 +63,20 @@ class Progress(QObject):
                             for file in files:
                                 if file.endswith(".tif"):
                                     tif_path = os.path.join(curDir, file)
-                                    tif_path_list.append(tif_path)
+                                    tif_name = os.path.split(tif_path)[1].split(".")[0]
+                                    tif_name_list.append(tif_name)
                                     golgi_image = tifffile.imread(tif_path)
                                     golgi_image_list.append(golgi_image)
                                     giantin_image_list.append(golgi_image[self.param_giantin_channel])
                     elif path.endswith(".tif"):
                         golgi_image = tifffile.imread(path)
-                        tif_path_list.append(path)
+                        tif_name = os.path.split(path)[1].split(".")[0]
+                        tif_name_list.append(tif_name)
                         golgi_image_list.append(golgi_image)
                         giantin_image_list.append(golgi_image[self.param_giantin_channel])
                 # print(tif_path_list)
-                num_golgi_images = len(tif_path_list)
+                num_golgi_images = len(tif_name_list)
+                self.image_name_list = tif_name_list
                 self.logger.info("Read {} golgi images sucessfully.".format(num_golgi_images))
                 self.append_text.emit("Read {} golgi images sucessfully.".format(num_golgi_images))
 
@@ -222,3 +226,6 @@ class Progress(QObject):
 
     def get_pred_flag(self):
         return self.pred_flag
+
+    def get_tif_name_list(self):
+        return self.image_name_list

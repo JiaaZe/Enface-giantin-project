@@ -3,7 +3,7 @@ import random
 import cv2
 import numpy as np
 import pandas as pd
-import tensorflow.keras.utils
+from tensorflow.python.keras.utils.np_utils import normalize as tf_normalize
 from matplotlib import pyplot as plt
 from patchify import patchify
 import math
@@ -90,7 +90,7 @@ def make_model_input(image_list, do_norm=True, data_shape=(-1, 256, 256, 1)):
     for image in image_list:
         out = image
         if do_norm:
-            out = tensorflow.keras.utils.normalize(out, axis=1)
+            out = tf_normalize(out, axis=1)
         out = out.reshape(data_shape)
         out_list.append(out)
     return out_list
