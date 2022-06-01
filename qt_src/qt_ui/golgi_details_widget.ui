@@ -73,13 +73,13 @@
            <widget class="QLabel" name="label_c1">
             <property name="minimumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>16777215</height>
              </size>
             </property>
@@ -111,13 +111,13 @@
            <widget class="QPushButton" name="btn_sub_c1">
             <property name="minimumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
@@ -134,13 +134,13 @@
            <widget class="QLabel" name="label_c2">
             <property name="minimumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>16777215</height>
              </size>
             </property>
@@ -172,13 +172,13 @@
            <widget class="QPushButton" name="btn_sub_c2">
             <property name="minimumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
@@ -195,13 +195,13 @@
            <widget class="QLabel" name="label_c3">
             <property name="minimumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>20</width>
+              <width>30</width>
               <height>16777215</height>
              </size>
             </property>
@@ -233,13 +233,13 @@
            <widget class="QPushButton" name="btn_sub_c3">
             <property name="minimumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>70</width>
+              <width>75</width>
               <height>30</height>
              </size>
             </property>
@@ -291,13 +291,13 @@
            <widget class="QPushButton" name="btn_export">
             <property name="minimumSize">
              <size>
-              <width>70</width>
+              <width>100</width>
               <height>30</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>70</width>
+              <width>100</width>
               <height>30</height>
              </size>
             </property>

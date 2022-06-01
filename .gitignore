@@ -137,3 +137,4 @@ dmypy.json
 /train_log/
 
 .idea
+/model_training/

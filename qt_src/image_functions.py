@@ -3,7 +3,7 @@ import random
 import cv2
 import numpy as np
 import pandas as pd
-import tensorflow.keras.utils
+from tensorflow.python.keras.utils.np_utils import normalize as tf_normalize
 from matplotlib import pyplot as plt
 from patchify import patchify
 import math
@@ -90,7 +90,7 @@ def make_model_input(image_list, do_norm=True, data_shape=(-1, 256, 256, 1)):
     for image in image_list:
         out = image
         if do_norm:
-            out = tensorflow.keras.utils.normalize(out, axis=1)
+            out = tf_normalize(out, axis=1)
         out = out.reshape(data_shape)
         out_list.append(out)
     return out_list
@@ -197,7 +197,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     x, y, w, h = cv2.boundingRect(contour)
     if x == 0 or y == 0 or x + w == golgi_w - 1 or y + h == golgi_h - 1:
         reject_msg = "Giantin is in the edge."
-        return None, None, None, None, False, sub_list, reject_msg
+        return None, None, None, None, False, sub_list, reject_msg, None
     max_size = max(w, h)
     if max_size >= rect_size:
         rect_size = (max_size // 10 + 1) * 10
@@ -221,6 +221,8 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
         edge_contour[2] = 1
     if y1 == golgi_h - 1:
         edge_contour[3] = 1
+    # x,y,w,h
+    roi_coord = [x0, y0, x1 - x0, y1 - y0]
     crop_golgi = np.copy(golgi_image[y0:y1, x0:x1, :])
     crop_mask = np.copy(pred_mask[y0:y1, x0:x1])
     if show_plt:
@@ -312,7 +314,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
             #     cv2.circle(giantin_mask, far, 1, 5, -1)
             plt.imshow(giantin_mask, cmap=cmap)
         plt.show()
-    return clear_golgi, giantin_contour, crop_mask, giantin_mask, flag, sub_list, reject_msg
+    return clear_golgi, giantin_contour, crop_mask, giantin_mask, flag, sub_list, reject_msg, roi_coord
 
 
 def check_golgi_crop(golgi, pred_mask, edge_contour, giantin_channel, sub_list=None, blank_channel=-1,
@@ -541,12 +543,12 @@ def check_golgi_crop(golgi, pred_mask, edge_contour, giantin_channel, sub_list=N
                     c_y = contour[:, :, 1].reshape(-1, )
                     if h - 1 in c_x or w - 1 in c_y or 0 in c_x or 0 in c_y:
                         # right edge
-                        if h-1 in c_x and edge_contour[2]:
+                        if h - 1 in c_x and edge_contour[2]:
                             reject_msg = "Contour in channel {} close to the right edge.".format(c_ + 1)
                             ret_flag = False
                             return copy_golgi, _, _, ret_flag, sub_list, reject_msg
                         # bottom edge
-                        if w-1 in c_y and edge_contour[3]:
+                        if w - 1 in c_y and edge_contour[3]:
                             reject_msg = "Contour in channel {} close to the bottom edge.".format(c_ + 1)
                             ret_flag = False
                             return copy_golgi, _, _, ret_flag, sub_list, reject_msg

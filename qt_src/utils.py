@@ -1,5 +1,7 @@
 import logging
 import os
+import zipfile
+import time
 from logging.handlers import TimedRotatingFileHandler
 
 from PyQt5 import QtCore, QtGui
@@ -8,6 +10,46 @@ from PyQt5.QtGui import QContextMenuEvent, QCursor
 from PyQt5.QtWidgets import QListWidget, QFileDialog, QListView, QAbstractItemView, QTreeView, QWidget, QMenu, QAction
 
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
+import roifile
+
+
+def coord2list(coord):
+    x, y, w, h = coord
+    coord_list = [[x, y], [x + h, y], [x + h, y + w], [x, y + w]]
+    return coord_list
+
+
+def get_zip(files, zip_name):
+    zp = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
+    for file in files:
+        zp.write(file)
+    zp.close()
+    time.sleep(1)
+
+
+def coord2roi(coords, output_folder, zip_name, giantin_channel):
+    # temp_path = os.path.join(output_folder, "roi_temp")
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    roi_path_list = []
+    for i, coord in enumerate(coords):
+        coord_list = coord2list(coord)
+        roi = roifile.ImagejRoi.frompoints(coord_list)
+        c_x = int(coord_list[0][0] / 2 + coord_list[1][0] / 2)
+        c_y = int(coord_list[0][1] / 2 + coord_list[3][1] / 2)
+        roi_path = './000{}-{:04d}-{:04d}.roi'.format(giantin_channel, c_x, c_y)
+        roi_path_list.append(roi_path)
+        roi.tofile(roi_path)
+    zip_file = os.path.join(output_folder, zip_name+".zip")
+    replicate_time = 0
+    while os.path.exists(zip_file):
+        replicate_time += 1
+        zip_name_tmp = zip_name+"({}).zip".format(replicate_time)
+        zip_file = os.path.join(output_folder, zip_name_tmp)
+    get_zip(roi_path_list, zip_file)
+    for roi_path in roi_path_list:
+        os.remove(roi_path)
+    return "Create " + zip_file
 
 
 def open_file_dialog(mode=1, filetype_list=[], folder=""):
@@ -143,16 +185,18 @@ class MyWidget(QWidget):
 class SquareWidget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
-        h_size, w_size = 270, 220
+        h_size, w_size = 290, 230
         self.setFixedSize(QtCore.QSize(h_size, w_size))
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
 
 class MyCanvas(FigureCanvas):
-    def __init__(self, figure=None, index=None, widget_num=None):
+    def __init__(self, figure=None, index=None, row=None, col=None, clicked=False):
         super().__init__(figure=figure)
         self.index = index
-        self.widget_num = widget_num
+        self.row = row
+        self.col = col
+        self.clicked = clicked
 
 
 def get_logger():

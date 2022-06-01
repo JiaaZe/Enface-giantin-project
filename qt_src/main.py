@@ -4,11 +4,10 @@ import sys
 import re
 
 import numpy as np
-from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
+from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal, QObject
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator, QFont
-from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout, QGroupBox
 
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanvas)
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
@@ -26,7 +25,7 @@ class MainWindow(QMainWindow):
     start_backgroung_work = Signal()
     last_path_str = ""
     last_giantin_channel = ""
-    font_size = 9
+    font_size = 8
 
     def __init__(self):
         super().__init__()
@@ -39,6 +38,7 @@ class MainWindow(QMainWindow):
 
         self.thread = None
         self.progress = None
+        self.roi_worker = None
         self.model = None
         self.pred_data = None
         self.golgi_images = None
@@ -66,6 +66,11 @@ class MainWindow(QMainWindow):
 
         self.ui.btn_image_clear.clicked.connect(lambda: self.listview_image_path.clear())
         self.ui.btn_image_remove.clicked.connect(lambda: self.listview_image_path.remove_items())
+
+        # each tab's group list
+        self.tab_group_list = []
+        self.tif_folder_list = []
+        self.tif_name_list = []
 
         def btn_browse_handler():
             path_list = open_file_dialog(mode=1)
@@ -101,11 +106,11 @@ class MainWindow(QMainWindow):
         # tab 2
         self.scroll_golgi_content = None
         self.axes_index = None
-        self.axes_index_num = None
 
         self.selected_dict = {}
         self.crop_golgi_list = []
         self.shifted_crop_golgi_list = []
+        self.ministacks_roi_list = []
         self.giantin_mask_list = []
         self.giantin_pred_list = []
 
@@ -116,6 +121,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_show_avergaed.setDisabled(True)
         self.ui.btn_show_avergaed.clicked.connect(lambda: self.show_averaged())
         self.ui.btn_save.clicked.connect(lambda: self.save_golgi_stacks())
+        self.ui.btn_save_roi.clicked.connect(lambda: self.save_stacks_roi())
 
     def extract_file_name(self, first_path=None):
         if first_path is None:
@@ -295,14 +301,21 @@ class MainWindow(QMainWindow):
         self.model = self.progress.get_model()
         self.pred_data = self.progress.get_pred_data()
         self.golgi_images = self.progress.get_golgi_images()
+        tmp_tif_name_list = self.progress.get_tif_name_list()
+        tmp_tif_folder_list = self.progress.get_tif_folder_list()
+        if len(tmp_tif_name_list) > 0:
+            self.tif_name_list = tmp_tif_name_list
+            self.tif_folder_list = tmp_tif_folder_list
         self.crop_golgi_list, self.shifted_crop_golgi_list, self.giantin_mask_list, self.giantin_pred_list \
             = self.progress.get_crop_golgi()
+        self.ministacks_roi_list = self.progress.get_roi_list()
         if len(self.crop_golgi_list) == 0:
             self.update_message("No satisfied giantin found. Try to use ImageJ manually.")
             return
         try:
             # show result in tab2
             c1_name, c2_name, c3_name = self.get_cur_channel_name()
+            self.tab_group_list = []
             self.show_golgi(c1_name, 0)
             self.show_golgi(c2_name, 1)
             self.show_golgi(c3_name, 2)
@@ -376,6 +389,7 @@ class MainWindow(QMainWindow):
             axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
             axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
             event.canvas.draw()
+        event.canvas.clicked = not event.canvas.clicked
 
         n, i = self.axes_index
         if n in self.selected_dict.keys():
@@ -392,14 +406,11 @@ class MainWindow(QMainWindow):
             self.selected_dict[n] = [i]
 
         cur_tab_index = self.ui.tabWidget_2.currentIndex()
-        widget_index = event.canvas.widget_num
         for tab_index, tab_content in enumerate(self.result_golgi_content_list):
             if tab_index != cur_tab_index and tab_content.isEnabled():
-                scroll_layout = tab_content.layout()
-                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
-                widget_grid_layout = cur_tab_scroll_content.layout()
-                canvas = widget_grid_layout.itemAt(widget_index).widget().layout().itemAt(0).widget()
-
+                group_box = self.tab_group_list[tab_index][n]
+                canvas = group_box.layout().itemAt(i).widget().layout().itemAt(0).widget()
+                canvas.clicked = not canvas.clicked
                 axes = canvas.figure.axes[0]
                 if len(axes.patches) > 0:
                     axes.patches.pop()
@@ -415,11 +426,6 @@ class MainWindow(QMainWindow):
         axes = event.inaxes
         if axes is None:
             return
-        # axes_id = self.axes_dict[hash(id(axes))]
-        # if id(axes) not in self.axes_dict.keys():
-        #     return
-        # self.axes_id = self.axes_dict[id(axes)]
-
         self.popup_golgi_widget = GolgiDetailWidget("Golgi details", logger=self.logger,
                                                     crop_golgi=self.crop_golgi_list[n][i],
                                                     giantin_mask=self.giantin_mask_list[n][i],
@@ -439,24 +445,27 @@ class MainWindow(QMainWindow):
             self.giantin_mask_list[n][i] = new_mask
             self.shifted_crop_golgi_list[n][i] = new_shifted_golgi
             self.giantin_pred_list[n][i] = new_pred
+        # not sure
+        self.popup_golgi_widget.setVisible(False)
         self.popup_golgi_widget.close()
         self.update_all_tab_widget()
 
     def update_all_tab_widget(self):
-        widget_index = self.axes_index_num
+        # widget_index = self.axes_index_num
         n, i = self.axes_index
         for tab_index, tab_content in enumerate(self.result_golgi_content_list):
             if tab_content.isEnabled():
-                scroll_layout = tab_content.layout()
-                cur_tab_scroll_content = scroll_layout.itemAt(0).widget()
-                widget_grid_layout = cur_tab_scroll_content.layout()
-                square_widget_old = widget_grid_layout.itemAt(widget_index).widget()
-                square_widget_new = SquareWidget(cur_tab_scroll_content)
-                canvas_old = square_widget_old.layout().itemAt(0).widget()
+                group_box = self.tab_group_list[tab_index][n]
+                group_box_gridlayout = group_box.layout()
+                square_widget_old = group_box_gridlayout.itemAt(i).widget()
+                square_widget_layout = square_widget_old.layout()
+                canvas_old = square_widget_layout.itemAt(0).widget()
                 index = canvas_old.index
-                widget_count = canvas_old.widget_num
+                row = canvas_old.row
+                col = canvas_old.col
+                old_clicked = canvas_old.clicked
 
-                canvas_new = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                canvas_new = MyCanvas(Figure(figsize=(3, 5)), index=index, row=row, col=col)
                 canvas_new.figure.tight_layout()
                 canvas_new.mpl_connect('button_press_event', lambda event: self.subplot_onclick_handler(event))
 
@@ -468,15 +477,20 @@ class MainWindow(QMainWindow):
                 for t in cbar.ax.get_yticklabels():
                     t.set_fontsize(self.font_size)
 
-                layout = QVBoxLayout()
-                layout.addWidget(canvas_new)
-                square_widget_new.setLayout(layout)
+                if old_clicked:
+                    canvas_new.clicked = True
+                    axes = canvas_new.figure.axes[0]
+                    ax_h, ax_w = 701, 701
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, facecolor="white", alpha=0.3))
+                    axes.add_patch(Rectangle((-0.5, -0.5), ax_h, ax_w, fill=False, edgecolor="red", linewidth=5))
+                    canvas_new.draw()
 
-                widget_grid_layout.replaceWidget(square_widget_old, square_widget_new)
+                square_widget_layout.removeWidget(canvas_old)
+                canvas_old.deleteLater()
+                square_widget_layout.addWidget(canvas_new)
 
     def subplot_onclick_handler(self, event):
         self.axes_index = event.canvas.index
-        self.axes_index_num = event.canvas.widget_num
         # print('you pressed', event.button, event.xdata, event.ydata)
         # MouseButton.Left: 1
         # MouseButton.Right: 3
@@ -499,11 +513,20 @@ class MainWindow(QMainWindow):
         # print("============{}==========".format(tab_index))
         # print("whole_figure_widget {}".format(id(whole_figure_widget)))
 
-        content_gridlayout = QGridLayout(whole_figure_widget)
+        content_vboxlayout = QVBoxLayout(whole_figure_widget)
         # print("content_gridlayout {}".format(id(content_gridlayout)))
         columns_per_row = 4
-        widget_count = 0
+        group_list = []
         for n, shifted_crop_golgi_list in enumerate(self.shifted_crop_golgi_list):
+            widget_count = 0
+            group_box = QGroupBox()
+            group_box.setTitle(self.tif_name_list[n])
+            group_name = "groupbox_{}".format(n)
+            group_box.setObjectName(group_name)
+            style = "QGroupBox#" + group_name + "{background:white; border: 8px solid white;font-weight: bold} " \
+                                                "QGroupBox::title{background:#ED97A0;}"
+            group_box.setStyleSheet(style)
+            group_gridlayout = QGridLayout(group_box)
             for i, crop_golgi in enumerate(shifted_crop_golgi_list):
                 if crop_golgi.shape[-1] == 2:
                     empty_shape = crop_golgi.shape[:2] + (1,)
@@ -515,7 +538,7 @@ class MainWindow(QMainWindow):
                 square_widget = SquareWidget(whole_figure_widget)
 
                 index = [n, i]
-                canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, widget_num=widget_count)
+                canvas = MyCanvas(Figure(figsize=(3, 5)), index=index, row=row, col=column)
                 widget_count += 1
                 canvas.mpl_connect('button_press_event',
                                    lambda event: self.subplot_onclick_handler(event))
@@ -533,10 +556,12 @@ class MainWindow(QMainWindow):
 
                 square_widget.setLayout(layout)
 
-                content_gridlayout.addWidget(square_widget, row, column, 1, 1)
+                group_gridlayout.addWidget(square_widget, row, column, 1, 1)
+            group_list.append(group_box)
+            content_vboxlayout.addWidget(group_box)
+        self.tab_group_list.append(group_list)
 
-        whole_figure_widget.setLayout(content_gridlayout)
-        whole_figure_widget.setStyleSheet("background:white")
+        whole_figure_widget.setLayout(content_vboxlayout)
 
         temp_layout = self.result_golgi_content_list[tab_index].layout()
         if temp_layout is not None:
@@ -553,40 +578,56 @@ class MainWindow(QMainWindow):
             self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
         self.result_golgi_content_list[tab_index].show()
 
+    def get_used_stacks(self, data_used=None):
+        """
+        Get data according to two radio button
+        :param data_used: Assign which data used to select.
+        :return:
+        """
+        if data_used is None:
+            raise Exception("Data used is None.")
+        selected_shifted_golgi = []
+        if self.ui.btn_pick.isChecked():
+            # pick_select
+            if not bool(self.selected_dict):
+                # no one to pick
+                ...
+            else:
+                for n, golgi_list in enumerate(data_used):
+                    if n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        selected_shifted_golgi.append(np.array(data_used[n])[selected_index])
+                    else:
+                        selected_shifted_golgi.append([])
+        else:
+            # drop_select
+            if not bool(self.selected_dict):
+                # no one to drop
+                selected_shifted_golgi = data_used
+            else:
+                for n, golgi_list in enumerate(data_used):
+                    if n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        aft_del_np = np.delete(np.array(data_used[n]), selected_index, axis=0)
+                        # if len(aft_del_np) > 0:
+                        selected_shifted_golgi.append(aft_del_np)
+                    # elif len(golgi_list) > 0:
+                    else:
+                        selected_shifted_golgi.append(np.array(golgi_list))
+        return selected_shifted_golgi
+
     def show_averaged(self):
         try:
-            selected_shifted_golgi = None
-            if self.ui.btn_pick.isChecked():
-                # pick_select
-                for n in self.selected_dict.keys():
-                    selected_index = self.selected_dict[n]
-                    if selected_shifted_golgi is None:
-                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
-                    else:
-                        selected_shifted_golgi = np.append(selected_shifted_golgi,
-                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
-                                                           axis=0)
-            else:
-                # drop_select
-                if not bool(self.selected_dict):
-                    # selected_dict is empty
-                    for golgi_list in self.shifted_crop_golgi_list:
-                        if len(golgi_list) == 0:
-                            continue
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = golgi_list
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
-                else:
-                    for n in self.selected_dict.keys():
-                        selected_index = self.selected_dict[n]
-                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = delete_np
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
-            averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
-            num_selected = len(selected_shifted_golgi)
+            selected_shifted_golgi = self.get_used_stacks(data_used=self.shifted_crop_golgi_list)
+            # selected_shifted_golgi: [np1[n,701,701,3],np2[n,701,701,3],np3[n,701,701,3]]
+            avg_temp = []
+            for temp in selected_shifted_golgi:
+                if len(temp) > 0:
+                    avg_temp.extend(temp)
+            if len(avg_temp) == 0:
+                raise Exception("Selected 0 ministack.")
+            averaged_golgi = np.mean(avg_temp, axis=0)
+            num_selected = len(avg_temp)
             self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
                                                     save_directory=self.save_directory,
                                                     param_dict=
@@ -603,35 +644,14 @@ class MainWindow(QMainWindow):
 
     def save_golgi_stacks(self):
         try:
-            # save all golgi mini stacks
-            selected_shifted_golgi = None
-            if self.ui.btn_pick.isChecked():
-                # pick_select
-                for n in self.selected_dict.keys():
-                    selected_index = self.selected_dict[n]
-                    if selected_shifted_golgi is None:
-                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
-                    else:
-                        selected_shifted_golgi = np.append(selected_shifted_golgi,
-                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
-                                                           axis=0)
-            else:
-                # drop_select
-                if not bool(self.selected_dict):
-                    # selected_dict is empty
-                    for golgi_list in self.shifted_crop_golgi_list:
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = golgi_list
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
-                else:
-                    for n in self.selected_dict.keys():
-                        selected_index = self.selected_dict[n]
-                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = delete_np
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+            selected_golgi_list = self.get_used_stacks(data_used=self.shifted_crop_golgi_list)
+            selected_shifted_golgi = []
+            for temp in selected_golgi_list:
+                if len(temp) > 0:
+                    selected_shifted_golgi.extend(temp)
+            if len(selected_shifted_golgi) == 0:
+                raise Exception("Selected 0 ministack.")
+            selected_shifted_golgi = np.array(selected_shifted_golgi)
             self.save_golgi_dialog = DialogSave(selected_shifted_golgi, exp_name=self.exp_name,
                                                 save_directory=self.save_directory)
             self.save_golgi_dialog.show()
@@ -641,6 +661,53 @@ class MainWindow(QMainWindow):
             # go back to tab 1
             self.ui.tabWidget.setCurrentIndex(0)
             self.logger.error(err_msg, exc_info=True)
+
+    class RoiWorder(QObject):
+        append_text = Signal(str)
+        worker_finished = Signal(int)
+
+        def __init__(self, selected_roi_list, folder_list, name_list, giantin_channel, logger):
+            super().__init__()
+            self.selected_roi_list = selected_roi_list
+            self.folder_list = folder_list
+            self.name_list = name_list
+            self.giantin_channel = giantin_channel
+            self.logger = logger
+
+        def save_roi(self):
+            try:
+                if len(self.selected_roi_list) == 0:
+                    raise Exception("Selected 0 ministack.")
+                for n, roi_coords in enumerate(self.selected_roi_list):
+                    if len(roi_coords) > 0:
+                        msg = coord2roi(roi_coords, self.folder_list[n], "{}_ROI".format(self.name_list[n]),
+                                        self.giantin_channel)
+                        self.append_text.emit(msg)
+                self.worker_finished.emit(0)
+            except Exception as e:
+                err_msg = "Saving mini-stacks ROI Error: {}".format(e)
+                self.append_text.emit(err_msg)
+                self.logger.error(err_msg, exc_info=True)
+                self.worker_finished.emit(0)
+
+    def save_stacks_roi(self):
+        selected_roi_list = self.get_used_stacks(data_used=self.ministacks_roi_list)
+        self.ui.tabWidget.setCurrentIndex(0)
+
+        if self.thread is not None:
+            self.thread.terminate()
+        self.thread = QThread(self)
+        self.roi_worker = self.RoiWorder(selected_roi_list=selected_roi_list, folder_list=self.tif_folder_list,
+                                         name_list=self.tif_name_list,
+                                         logger=self.logger,
+                                         giantin_channel=self.param_dict["param_giantin_channel"] + 1)
+
+        self.roi_worker.moveToThread(self.thread)
+        self.thread.started.connect(self.roi_worker.save_roi)
+        self.roi_worker.append_text.connect(self.update_message)
+        self.roi_worker.worker_finished.connect(self.thread.quit)
+        self.roi_worker.worker_finished.connect(self.roi_worker.deleteLater)
+        self.thread.start()
 
 
 if __name__ == '__main__':
