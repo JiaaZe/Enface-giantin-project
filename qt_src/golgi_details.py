@@ -1,5 +1,7 @@
 import logging
 import os
+import platform
+import subprocess
 
 import cv2
 import numpy as np
@@ -400,15 +402,20 @@ class GolgiDetailWidget(QWidget):
                     pdf.savefig(canvas.figure, dpi=120)
             else:
                 canvas.figure.savefig(save_path)
+            # open saved folder.
+            systemType = platform.platform()
+            file = os.path.split(save_path)[0]
+            if "mac" in systemType:
+                subprocess.call(["open", file])
+            else:
+                os.startfile(file)
+            success_msg = "Save averaged plot sucessfully."
+            self.logger.info(success_msg)
+            self.update_message(success_msg)
         except Exception as e:
             err_msg = "Error when save averaged plot: {}".format(e)
             self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
-        else:
-            os.startfile(os.path.split(save_path)[0])
-            success_msg = "Save averaged plot sucessfully."
-            self.logger.info(success_msg)
-            self.update_message(success_msg)
 
     def export_averaged_result(self):
         try:
@@ -422,15 +429,20 @@ class GolgiDetailWidget(QWidget):
             for i, df in enumerate(self.radial_mean_intensity_df_list):
                 df.to_excel(excel_writer, sheet_name="C{}".format(i + 1))
             excel_writer.save()
+            # open saved folder.
+            systemType = platform.platform()
+            file = os.path.split(save_path)[0]
+            if "mac" in systemType:
+                subprocess.call(["open", file])
+            else:
+                os.startfile(file)
+            success_msg = "Export averaged results sucessfully."
+            self.logger.info(success_msg)
+            self.update_message(success_msg)
         except Exception as e:
             err_msg = "Error when export averaged results: {}".format(e)
             self.logger.error(err_msg, exc_info=True)
             self.update_message(err_msg)
-        else:
-            os.startfile(os.path.split(save_path)[0])
-            success_msg = "Export averaged results sucessfully."
-            self.logger.info(success_msg)
-            self.update_message(success_msg)
 
 
 class Backwork(QObject):
