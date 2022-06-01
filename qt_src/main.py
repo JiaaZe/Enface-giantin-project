@@ -521,7 +521,11 @@ class MainWindow(QMainWindow):
             widget_count = 0
             group_box = QGroupBox()
             group_box.setTitle(self.tif_name_list[n])
-            group_box.setStyleSheet("background:white;border: 0.5px solid white;")
+            group_name = "groupbox_{}".format(n)
+            group_box.setObjectName(group_name)
+            style = "QGroupBox#" + group_name + "{background:white; border: 8px solid white;font-weight: bold} " \
+                                                "QGroupBox::title{background:#ED97A0;}"
+            group_box.setStyleSheet(style)
             group_gridlayout = QGridLayout(group_box)
             for i, crop_golgi in enumerate(shifted_crop_golgi_list):
                 if crop_golgi.shape[-1] == 2:
