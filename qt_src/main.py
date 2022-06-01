@@ -574,42 +574,56 @@ class MainWindow(QMainWindow):
             self.result_golgi_content_list[tab_index].setLayout(scroll_layout)
         self.result_golgi_content_list[tab_index].show()
 
+    def get_used_stacks(self, data_used=None):
+        """
+        Get data according to two radio button
+        :param data_used: Assign which data used to select.
+        :return:
+        """
+        if data_used is None:
+            raise Exception("Data used is None.")
+        selected_shifted_golgi = []
+        if self.ui.btn_pick.isChecked():
+            # pick_select
+            if not bool(self.selected_dict):
+                # no one to pick
+                ...
+            else:
+                for n, golgi_list in enumerate(data_used):
+                    if n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        selected_shifted_golgi.append(np.array(data_used[n])[selected_index])
+                    else:
+                        selected_shifted_golgi.append([])
+        else:
+            # drop_select
+            if not bool(self.selected_dict):
+                # no one to drop
+                selected_shifted_golgi = data_used
+            else:
+                for n, golgi_list in enumerate(data_used):
+                    if n in self.selected_dict.keys():
+                        selected_index = self.selected_dict[n]
+                        aft_del_np = np.delete(np.array(data_used[n]), selected_index, axis=0)
+                        # if len(aft_del_np) > 0:
+                        selected_shifted_golgi.append(aft_del_np)
+                    # elif len(golgi_list) > 0:
+                    else:
+                        selected_shifted_golgi.append(np.array(golgi_list))
+        return selected_shifted_golgi
+
     def show_averaged(self):
         try:
-            selected_shifted_golgi = None
-            if self.ui.btn_pick.isChecked():
-                # pick_select
-                for n in self.selected_dict.keys():
-                    selected_index = self.selected_dict[n]
-                    if selected_shifted_golgi is None:
-                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
-                    else:
-                        selected_shifted_golgi = np.append(selected_shifted_golgi,
-                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
-                                                           axis=0)
-            else:
-                # drop_select
-                if not bool(self.selected_dict):
-                    # selected_dict is empty
-                    for golgi_list in self.shifted_crop_golgi_list:
-                        if len(golgi_list) == 0:
-                            continue
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = golgi_list
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
-                else:
-                    selected_shifted_golgi = []
-                    for n, golgi_list in enumerate(self.shifted_crop_golgi_list):
-                        if n in self.selected_dict.keys():
-                            selected_index = self.selected_dict[n]
-                            aft_del_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                            if len(aft_del_np) > 0:
-                                selected_shifted_golgi.extend(aft_del_np)
-                        elif len(golgi_list) > 0:
-                            selected_shifted_golgi.extend(np.array(golgi_list))
-            averaged_golgi = np.mean(selected_shifted_golgi, axis=0)
-            num_selected = len(selected_shifted_golgi)
+            selected_shifted_golgi = self.get_used_stacks(data_used=self.shifted_crop_golgi_list)
+            # selected_shifted_golgi: [np1[n,701,701,3],np2[n,701,701,3],np3[n,701,701,3]]
+            avg_temp = []
+            for temp in selected_shifted_golgi:
+                if len(temp) > 0:
+                    avg_temp.extend(temp)
+            if len(avg_temp) == 0:
+                raise Exception("Selected 0 ministack.")
+            averaged_golgi = np.mean(avg_temp, axis=0)
+            num_selected = len(avg_temp)
             self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
                                                     save_directory=self.save_directory,
                                                     param_dict=
@@ -626,35 +640,14 @@ class MainWindow(QMainWindow):
 
     def save_golgi_stacks(self):
         try:
-            # save all golgi mini stacks
-            selected_shifted_golgi = None
-            if self.ui.btn_pick.isChecked():
-                # pick_select
-                for n in self.selected_dict.keys():
-                    selected_index = self.selected_dict[n]
-                    if selected_shifted_golgi is None:
-                        selected_shifted_golgi = np.array(self.shifted_crop_golgi_list[n])[selected_index]
-                    else:
-                        selected_shifted_golgi = np.append(selected_shifted_golgi,
-                                                           np.array(self.shifted_crop_golgi_list[n])[selected_index],
-                                                           axis=0)
-            else:
-                # drop_select
-                if not bool(self.selected_dict):
-                    # selected_dict is empty
-                    for golgi_list in self.shifted_crop_golgi_list:
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = golgi_list
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, golgi_list, axis=0)
-                else:
-                    for n in self.selected_dict.keys():
-                        selected_index = self.selected_dict[n]
-                        delete_np = np.delete(np.array(self.shifted_crop_golgi_list[n]), selected_index, axis=0)
-                        if selected_shifted_golgi is None:
-                            selected_shifted_golgi = delete_np
-                        else:
-                            selected_shifted_golgi = np.append(selected_shifted_golgi, delete_np, axis=0)
+            selected_golgi_list = self.get_used_stacks(data_used=self.shifted_crop_golgi_list)
+            selected_shifted_golgi = []
+            for temp in selected_golgi_list:
+                if len(temp) > 0:
+                    selected_shifted_golgi.extend(temp)
+            if len(selected_shifted_golgi) == 0:
+                raise Exception("Selected 0 ministack.")
+            selected_shifted_golgi = np.array(selected_shifted_golgi)
             self.save_golgi_dialog = DialogSave(selected_shifted_golgi, exp_name=self.exp_name,
                                                 save_directory=self.save_directory)
             self.save_golgi_dialog.show()
