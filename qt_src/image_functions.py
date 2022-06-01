@@ -704,6 +704,8 @@ def normalize_total_intensity(image, target_total_intensity):
 
 
 def cal_radial_mean_intensity(golgi_image):
+    len_shape = len(golgi_image.shape)
+    assert len_shape == 3, "Dimension of image shape is not 3."
     mx, my = 349.5, 349.5
     h, w, c = golgi_image.shape
     df_list = []

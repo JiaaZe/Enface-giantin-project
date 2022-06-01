@@ -627,8 +627,6 @@ class MainWindow(QMainWindow):
             if len(avg_temp) == 0:
                 raise Exception("Selected 0 ministack.")
             averaged_golgi = np.mean(avg_temp, axis=0)
-            if len(averaged_golgi.shape) != 3:
-                raise Exception("Dimension of averaged image shape is not 3.")
             num_selected = len(avg_temp)
             self.popup_averaged = GolgiDetailWidget("Averaged golgi mini-stacks", logger=self.logger, mode=2,
                                                     save_directory=self.save_directory,
