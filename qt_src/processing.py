@@ -247,9 +247,3 @@ class Progress(QObject):
 
     def get_tif_folder_list(self):
         return self.image_folder_list
-
-    def get_tif_name_list(self):
-        return self.image_name_list
-
-    def get_tif_folder_list(self):
-        return self.image_folder_list
