@@ -6,7 +6,7 @@
    - `cd qt_src`
    - `pyinstaller --noconfirm --distpath ../exe --workpath ../exe/build enfaceTool.spec`
 
-## Version v2.1
+## Version v2.0
 1. Optimize the result panel fluency.
 2. Add multiple tabs in result panel for different protein channel.
 
