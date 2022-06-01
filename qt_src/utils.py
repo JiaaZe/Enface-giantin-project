@@ -40,14 +40,16 @@ def coord2roi(coords, output_folder, zip_name, giantin_channel):
         roi_path = './000{}-{:04d}-{:04d}.roi'.format(giantin_channel, c_x, c_y)
         roi_path_list.append(roi_path)
         roi.tofile(roi_path)
-    # files_name = os.listdir(temp_path)
-    # files = [os.path.join(temp_path, i) for i in files_name]
-    zip_file = os.path.join(output_folder, zip_name)
-    # get_zip(files, zip_file)
+    zip_file = os.path.join(output_folder, zip_name+".zip")
+    replicate_time = 0
+    while os.path.exists(zip_file):
+        replicate_time += 1
+        zip_name_tmp = zip_name+"({}).zip".format(replicate_time)
+        zip_file = os.path.join(output_folder, zip_name_tmp)
     get_zip(roi_path_list, zip_file)
     for roi_path in roi_path_list:
         os.remove(roi_path)
-    print("Create " + zip_file)
+    return "Create " + zip_file
 
 
 def open_file_dialog(mode=1, filetype_list=[], folder=""):
