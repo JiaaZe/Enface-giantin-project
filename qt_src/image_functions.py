@@ -314,7 +314,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
             #     cv2.circle(giantin_mask, far, 1, 5, -1)
             plt.imshow(giantin_mask, cmap=cmap)
         plt.show()
-    return clear_golgi, giantin_contour, crop_mask, giantin_mask, flag, sub_list, reject_msg
+    return clear_golgi, giantin_contour, crop_mask, giantin_mask, flag, sub_list, reject_msg, roi_coord
 
 
 def check_golgi_crop(golgi, pred_mask, edge_contour, giantin_channel, sub_list=None, blank_channel=-1,
@@ -543,12 +543,12 @@ def check_golgi_crop(golgi, pred_mask, edge_contour, giantin_channel, sub_list=N
                     c_y = contour[:, :, 1].reshape(-1, )
                     if h - 1 in c_x or w - 1 in c_y or 0 in c_x or 0 in c_y:
                         # right edge
-                        if h-1 in c_x and edge_contour[2]:
+                        if h - 1 in c_x and edge_contour[2]:
                             reject_msg = "Contour in channel {} close to the right edge.".format(c_ + 1)
                             ret_flag = False
                             return copy_golgi, _, _, ret_flag, sub_list, reject_msg
                         # bottom edge
-                        if w-1 in c_y and edge_contour[3]:
+                        if w - 1 in c_y and edge_contour[3]:
                             reject_msg = "Contour in channel {} close to the bottom edge.".format(c_ + 1)
                             ret_flag = False
                             return copy_golgi, _, _, ret_flag, sub_list, reject_msg
