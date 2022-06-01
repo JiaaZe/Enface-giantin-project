@@ -1,5 +1,5 @@
 # Enface_giantin_project
-### v2.2
+### v2.3
 
 ## INTRODUCTION
 - Build application file from source code:
