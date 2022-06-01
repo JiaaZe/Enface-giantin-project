@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1112</width>
+    <width>1331</width>
     <height>759</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_start">
        <attribute name="title">
@@ -35,8 +35,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1068</width>
-             <height>671</height>
+             <width>1279</width>
+             <height>660</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout_10">
@@ -283,6 +283,9 @@
                 <height>250</height>
                </size>
               </property>
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
               <property name="title">
                <string>Parameters</string>
               </property>
@@ -318,7 +321,7 @@
                          <number>10</number>
                         </property>
                         <property name="verticalSpacing">
-                         <number>6</number>
+                         <number>8</number>
                         </property>
                         <item row="0" column="2">
                          <widget class="QLabel" name="hint_giantin_threshold">
@@ -505,13 +508,13 @@
                       <widget class="QGroupBox" name="groupBox_4">
                        <property name="minimumSize">
                         <size>
-                         <width>260</width>
+                         <width>0</width>
                          <height>80</height>
                         </size>
                        </property>
                        <property name="maximumSize">
                         <size>
-                         <width>260</width>
+                         <width>16777215</width>
                          <height>80</height>
                         </size>
                        </property>
@@ -523,6 +526,9 @@
                          <layout class="QGridLayout" name="gridLayout_3">
                           <property name="sizeConstraint">
                            <enum>QLayout::SetFixedSize</enum>
+                          </property>
+                          <property name="verticalSpacing">
+                           <number>10</number>
                           </property>
                           <item row="1" column="0">
                            <widget class="QLabel" name="label_giantin_size">
@@ -590,20 +596,20 @@
                      <item>
                       <widget class="QGroupBox" name="channel_group">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
                        </property>
                        <property name="minimumSize">
                         <size>
-                         <width>240</width>
+                         <width>0</width>
                          <height>80</height>
                         </size>
                        </property>
                        <property name="maximumSize">
                         <size>
-                         <width>240</width>
+                         <width>16777215</width>
                          <height>80</height>
                         </size>
                        </property>
@@ -615,6 +621,12 @@
                          <layout class="QGridLayout" name="gridLayout_2">
                           <property name="sizeConstraint">
                            <enum>QLayout::SetFixedSize</enum>
+                          </property>
+                          <property name="horizontalSpacing">
+                           <number>7</number>
+                          </property>
+                          <property name="verticalSpacing">
+                           <number>10</number>
                           </property>
                           <item row="0" column="0">
                            <widget class="QLabel" name="label_giantin_channel">
@@ -702,15 +714,21 @@
                         <property name="formAlignment">
                          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                         </property>
+                        <property name="horizontalSpacing">
+                         <number>8</number>
+                        </property>
+                        <property name="verticalSpacing">
+                         <number>4</number>
+                        </property>
                         <property name="leftMargin">
-                         <number>1</number>
+                         <number>6</number>
                         </property>
                         <item row="1" column="0">
                          <widget class="QLabel" name="label_c1_name">
                           <property name="minimumSize">
                            <size>
-                            <width>0</width>
-                            <height>0</height>
+                            <width>64</width>
+                            <height>20</height>
                            </size>
                           </property>
                           <property name="maximumSize">
@@ -750,8 +768,8 @@
                          <widget class="QLabel" name="label_c2_name">
                           <property name="minimumSize">
                            <size>
-                            <width>0</width>
-                            <height>0</height>
+                            <width>64</width>
+                            <height>20</height>
                            </size>
                           </property>
                           <property name="maximumSize">
@@ -791,8 +809,8 @@
                          <widget class="QLabel" name="label_c3_name">
                           <property name="minimumSize">
                            <size>
-                            <width>0</width>
-                            <height>0</height>
+                            <width>64</width>
+                            <height>20</height>
                            </size>
                           </property>
                           <property name="maximumSize">
@@ -1009,6 +1027,13 @@ with other channels</string>
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="btn_save_roi">
+             <property name="text">
+              <string>Save Roi</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="btn_save">
              <property name="text">
               <string>Save result</string>
@@ -1044,8 +1069,8 @@ with other channels</string>
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1044</width>
-                 <height>574</height>
+                 <width>98</width>
+                 <height>147</height>
                 </rect>
                </property>
               </widget>
@@ -1074,8 +1099,8 @@ with other channels</string>
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1044</width>
-                 <height>574</height>
+                 <width>98</width>
+                 <height>147</height>
                 </rect>
                </property>
               </widget>
@@ -1104,8 +1129,8 @@ with other channels</string>
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>1044</width>
-                 <height>574</height>
+                 <width>1251</width>
+                 <height>551</height>
                 </rect>
                </property>
               </widget>
