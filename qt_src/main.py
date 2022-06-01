@@ -4,7 +4,7 @@ import sys
 import re
 
 import numpy as np
-from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal
+from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal, QObject
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout, QGroupBox
 
@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
 
         self.thread = None
         self.progress = None
+        self.roi_worker = None
         self.model = None
         self.pred_data = None
         self.golgi_images = None
@@ -68,6 +69,7 @@ class MainWindow(QMainWindow):
 
         # each tab's group list
         self.tab_group_list = []
+        self.tif_folder_list = []
         self.tif_name_list = []
 
         def btn_browse_handler():
@@ -108,6 +110,7 @@ class MainWindow(QMainWindow):
         self.selected_dict = {}
         self.crop_golgi_list = []
         self.shifted_crop_golgi_list = []
+        self.ministacks_roi_list = []
         self.giantin_mask_list = []
         self.giantin_pred_list = []
 
@@ -118,6 +121,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_show_avergaed.setDisabled(True)
         self.ui.btn_show_avergaed.clicked.connect(lambda: self.show_averaged())
         self.ui.btn_save.clicked.connect(lambda: self.save_golgi_stacks())
+        self.ui.btn_save_roi.clicked.connect(lambda: self.save_stacks_roi())
 
     def extract_file_name(self, first_path=None):
         if first_path is None:
@@ -298,10 +302,13 @@ class MainWindow(QMainWindow):
         self.pred_data = self.progress.get_pred_data()
         self.golgi_images = self.progress.get_golgi_images()
         tmp_tif_name_list = self.progress.get_tif_name_list()
+        tmp_tif_folder_list = self.progress.get_tif_folder_list()
         if len(tmp_tif_name_list) > 0:
             self.tif_name_list = tmp_tif_name_list
+            self.tif_folder_list = tmp_tif_folder_list
         self.crop_golgi_list, self.shifted_crop_golgi_list, self.giantin_mask_list, self.giantin_pred_list \
             = self.progress.get_crop_golgi()
+        self.ministacks_roi_list = self.progress.get_roi_list()
         if len(self.crop_golgi_list) == 0:
             self.update_message("No satisfied giantin found. Try to use ImageJ manually.")
             return
@@ -657,6 +664,53 @@ class MainWindow(QMainWindow):
             # go back to tab 1
             self.ui.tabWidget.setCurrentIndex(0)
             self.logger.error(err_msg, exc_info=True)
+
+    class RoiWorder(QObject):
+        append_text = Signal(str)
+        worker_finished = Signal(int)
+
+        def __init__(self, selected_roi_list, folder_list, name_list, giantin_channel, logger):
+            super().__init__()
+            self.selected_roi_list = selected_roi_list
+            self.folder_list = folder_list
+            self.name_list = name_list
+            self.giantin_channel = giantin_channel
+            self.logger = logger
+
+        def save_roi(self):
+            try:
+                if len(self.selected_roi_list) == 0:
+                    raise Exception("Selected 0 ministack.")
+                for n, roi_coords in enumerate(self.selected_roi_list):
+                    if len(roi_coords) > 0:
+                        msg = coord2roi(roi_coords, self.folder_list[n], "{}_ROI".format(self.name_list[n]),
+                                        self.giantin_channel)
+                        self.append_text.emit(msg)
+                self.worker_finished.emit(0)
+            except Exception as e:
+                err_msg = "Saving mini-stacks ROI Error: {}".format(e)
+                self.append_text.emit(err_msg)
+                self.logger.error(err_msg, exc_info=True)
+                self.worker_finished.emit(0)
+
+    def save_stacks_roi(self):
+        selected_roi_list = self.get_used_stacks(data_used=self.ministacks_roi_list)
+        self.ui.tabWidget.setCurrentIndex(0)
+
+        if self.thread is not None:
+            self.thread.terminate()
+        self.thread = QThread(self)
+        self.roi_worker = self.RoiWorder(selected_roi_list=selected_roi_list, folder_list=self.tif_folder_list,
+                                         name_list=self.tif_name_list,
+                                         logger=self.logger,
+                                         giantin_channel=self.param_dict["param_giantin_channel"] + 1)
+
+        self.roi_worker.moveToThread(self.thread)
+        self.thread.started.connect(self.roi_worker.save_roi)
+        self.roi_worker.append_text.connect(self.update_message)
+        self.roi_worker.worker_finished.connect(self.thread.quit)
+        self.roi_worker.worker_finished.connect(self.roi_worker.deleteLater)
+        self.thread.start()
 
 
 if __name__ == '__main__':

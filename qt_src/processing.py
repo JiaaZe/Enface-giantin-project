@@ -41,7 +41,9 @@ class Progress(QObject):
         self.shifted_crop_golgi_list = []
         self.giantin_mask_list = []
         self.giantin_pred_crop_list = []
-        self.image_name_list=[]
+        self.image_name_list = []
+        self.image_folder_list = []
+        self.ministack_roi_list = []
 
         self.model = None
         if model is not None:
@@ -55,6 +57,7 @@ class Progress(QObject):
             if self.pred_flag:
                 # read images
                 tif_name_list = []
+                tif_folder_list = []
                 golgi_image_list = []
                 giantin_image_list = []
                 for path in self.image_path_list:
@@ -63,6 +66,8 @@ class Progress(QObject):
                             for file in files:
                                 if file.endswith(".tif"):
                                     tif_path = os.path.join(curDir, file)
+                                    tif_folder = os.path.split(tif_path)[0]
+                                    tif_folder_list.append(tif_folder)
                                     tif_name = os.path.split(tif_path)[1].split(".")[0]
                                     tif_name_list.append(tif_name)
                                     golgi_image = tifffile.imread(tif_path)
@@ -70,13 +75,16 @@ class Progress(QObject):
                                     giantin_image_list.append(golgi_image[self.param_giantin_channel])
                     elif path.endswith(".tif"):
                         golgi_image = tifffile.imread(path)
+                        tif_folder = os.path.split(path)[0]
                         tif_name = os.path.split(path)[1].split(".")[0]
+                        tif_folder_list.append(tif_folder)
                         tif_name_list.append(tif_name)
                         golgi_image_list.append(golgi_image)
                         giantin_image_list.append(golgi_image[self.param_giantin_channel])
                 # print(tif_path_list)
                 num_golgi_images = len(tif_name_list)
                 self.image_name_list = tif_name_list
+                self.image_folder_list = tif_folder_list
                 self.logger.info("Read {} golgi images sucessfully.".format(num_golgi_images))
                 self.append_text.emit("Read {} golgi images sucessfully.".format(num_golgi_images))
 
@@ -134,7 +142,7 @@ class Progress(QObject):
                     self.append_text.emit(progress_text)
                 else:
                     self.update_progress.emit(progress_text)
-                selected_golgi_list, shifted_golgi_list, giantin_mask_list, giantin_pred_list = self.analysis_golgi(
+                selected_golgi_list, shifted_golgi_list, giantin_mask_list, giantin_pred_list, roi_coords_list = self.analysis_golgi(
                     self.golgi_images[i],
                     pred_mask)
                 # crop golgi original image
@@ -145,6 +153,8 @@ class Progress(QObject):
                 self.giantin_mask_list.append(giantin_mask_list)
                 # crop giantin pred
                 self.giantin_pred_crop_list.append(giantin_pred_list)
+                # roi coords
+                self.ministack_roi_list.append(roi_coords_list)
 
             self.logger.info("Analyzing predicted giantin masks finished.")
             self.append_text.emit("Analyzing predicted giantin masks finished.")
@@ -167,6 +177,7 @@ class Progress(QObject):
         shifted_golgi_list = []
         giantin_mask_list = []
         giantin_pred_list = []
+        roi_coord_list = []
         for i, contour in enumerate(contours):
             contour_area = cv2.contourArea(contour)
             # The reason of duplicate giantin: not full parts are predicted. After thresholding, it splited.
@@ -176,7 +187,7 @@ class Progress(QObject):
             sub_list = None
             rect_size = self.param_giantin_roi_size
             for _ in range(2):
-                crop_golgi, giantin_contour, crop_pred, giantin_mask, flag, sub_list, rej_msg = check_contours(
+                crop_golgi, giantin_contour, crop_pred, giantin_mask, flag, sub_list, rej_msg, roi_coord = check_contours(
                     golgi_image,
                     pred_mask, contour,
                     giantin_channel=self.param_giantin_channel,
@@ -206,11 +217,12 @@ class Progress(QObject):
                         shifted_golgi_list.append(shifted_golgi)
                         giantin_mask_list.append(giantin_mask)
                         giantin_pred_list.append(crop_pred)
+                        roi_coord_list.append(roi_coord)
                         break
                 else:
                     self.logger.info(rej_msg)
                     break
-        return selected_golgi_list, shifted_golgi_list, giantin_mask_list, giantin_pred_list
+        return selected_golgi_list, shifted_golgi_list, giantin_mask_list, giantin_pred_list, roi_coord_list
 
     def get_model(self):
         return self.model
@@ -224,8 +236,14 @@ class Progress(QObject):
     def get_crop_golgi(self):
         return self.crop_golgi_list, self.shifted_crop_golgi_list, self.giantin_mask_list, self.giantin_pred_crop_list
 
+    def get_roi_list(self):
+        return self.ministack_roi_list
+
     def get_pred_flag(self):
         return self.pred_flag
 
     def get_tif_name_list(self):
         return self.image_name_list
+
+    def get_tif_folder_list(self):
+        return self.image_folder_list

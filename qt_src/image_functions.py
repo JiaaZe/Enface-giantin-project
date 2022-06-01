@@ -197,7 +197,7 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
     x, y, w, h = cv2.boundingRect(contour)
     if x == 0 or y == 0 or x + w == golgi_w - 1 or y + h == golgi_h - 1:
         reject_msg = "Giantin is in the edge."
-        return None, None, None, None, False, sub_list, reject_msg
+        return None, None, None, None, False, sub_list, reject_msg, None
     max_size = max(w, h)
     if max_size >= rect_size:
         rect_size = (max_size // 10 + 1) * 10
@@ -221,6 +221,8 @@ def check_contours(golgi_image, pred_mask, contour, min_giantin_area, giantin_po
         edge_contour[2] = 1
     if y1 == golgi_h - 1:
         edge_contour[3] = 1
+    # x,y,w,h
+    roi_coord = [x0, y0, x1 - x0, y1 - y0]
     crop_golgi = np.copy(golgi_image[y0:y1, x0:x1, :])
     crop_mask = np.copy(pred_mask[y0:y1, x0:x1])
     if show_plt:
