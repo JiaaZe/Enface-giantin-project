@@ -5,6 +5,7 @@ import sys
 import re
 
 import numpy as np
+import tifffile
 from PyQt5.QtCore import QRegularExpression, QThread, pyqtSignal as Signal, QObject
 from PyQt5.QtGui import QRegularExpressionValidator, QIntValidator, QFont
 from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QGridLayout, QGroupBox
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_show_avergaed.clicked.connect(lambda: self.show_averaged())
         self.ui.btn_save.clicked.connect(lambda: self.save_golgi_stacks())
         self.ui.btn_save_roi.clicked.connect(lambda: self.save_stacks_roi())
+        self.ui.btn_save_pred.clicked.connect(lambda: self.save_pred_images())
 
     def extract_file_name(self, first_path=None):
         if first_path is None:
@@ -709,6 +711,26 @@ class MainWindow(QMainWindow):
         self.roi_worker.worker_finished.connect(self.thread.quit)
         self.roi_worker.worker_finished.connect(self.roi_worker.deleteLater)
         self.thread.start()
+
+    def save_pred_images(self):
+        try:
+            save_path = open_file_dialog(mode=4)
+            for n, pred in enumerate(self.pred_data):
+                file_name = "pred_{}".format(self.tif_name_list[n])
+                file_path = os.path.join(save_path, file_name+".tif")
+                replicate_time = 0
+                while os.path.exists(file_path):
+                    replicate_time += 1
+                    file_name = "pred_{}({})".format(self.tif_name_list[n], replicate_time)
+                    file_path = os.path.join(save_path, file_name+".tif")
+                tifffile.imsave(file_path, pred)
+            open_folder_func(save_path)
+        except Exception as e:
+            err_msg = "Saving pred images Error: {}".format(e)
+            self.append_text.emit(err_msg)
+            # go back to tab 1
+            self.ui.tabWidget.setCurrentIndex(0)
+            self.logger.error(err_msg, exc_info=True)
 
 
 if __name__ == '__main__':

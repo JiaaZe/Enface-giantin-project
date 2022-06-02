@@ -1027,9 +1027,9 @@ with other channels</string>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="btn_save_roi">
+            <widget class="QPushButton" name="btn_save_pred">
              <property name="text">
-              <string>Save Roi</string>
+              <string>Save Pred Image</string>
              </property>
             </widget>
            </item>
@@ -1076,7 +1076,7 @@ with other channels</string>
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
+                 <width>76</width>
                  <height>147</height>
                 </rect>
                </property>
@@ -1106,7 +1106,7 @@ with other channels</string>
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>98</width>
+                 <width>76</width>
                  <height>147</height>
                 </rect>
                </property>
