@@ -1,5 +1,7 @@
 import logging
 import os
+import platform
+import subprocess
 import zipfile
 import time
 from logging.handlers import TimedRotatingFileHandler
@@ -40,11 +42,11 @@ def coord2roi(coords, output_folder, zip_name, giantin_channel):
         roi_path = './000{}-{:04d}-{:04d}.roi'.format(giantin_channel, c_x, c_y)
         roi_path_list.append(roi_path)
         roi.tofile(roi_path)
-    zip_file = os.path.join(output_folder, zip_name+".zip")
+    zip_file = os.path.join(output_folder, zip_name + ".zip")
     replicate_time = 0
     while os.path.exists(zip_file):
         replicate_time += 1
-        zip_name_tmp = zip_name+"({}).zip".format(replicate_time)
+        zip_name_tmp = zip_name + "({}).zip".format(replicate_time)
         zip_file = os.path.join(output_folder, zip_name_tmp)
     get_zip(roi_path_list, zip_file)
     for roi_path in roi_path_list:
@@ -100,6 +102,15 @@ def open_file_dialog(mode=1, filetype_list=[], folder=""):
             path = fileDialog.getOpenFileName()[0]
         path_list.append(path)
     return path_list
+
+
+def open_folder_func(folder_path):
+    # open saved folder.
+    systemType = platform.platform()
+    if "mac" in systemType:
+        subprocess.call(["open", folder_path])
+    else:
+        os.startfile(folder_path)
 
 
 class ListBoxWidget(QListWidget):

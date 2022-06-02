@@ -17,7 +17,7 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 
-from utils import get_logger
+from utils import get_logger, open_folder_func
 from qt_ui.golgi_details_widget import Ui_Golgi_details
 from image_functions import check_golgi_crop, cal_center_of_mass, cal_gyradius, normalize_total_intensity, \
     shift_make_border, cal_radial_mean_intensity
@@ -403,12 +403,7 @@ class GolgiDetailWidget(QWidget):
             else:
                 canvas.figure.savefig(save_path)
             # open saved folder.
-            systemType = platform.platform()
-            file = os.path.split(save_path)[0]
-            if "mac" in systemType:
-                subprocess.call(["open", file])
-            else:
-                os.startfile(file)
+            open_folder_func(os.path.split(save_path)[0])
             success_msg = "Save averaged plot sucessfully."
             self.logger.info(success_msg)
             self.update_message(success_msg)
@@ -430,12 +425,7 @@ class GolgiDetailWidget(QWidget):
                 df.to_excel(excel_writer, sheet_name="C{}".format(i + 1))
             excel_writer.save()
             # open saved folder.
-            systemType = platform.platform()
-            file = os.path.split(save_path)[0]
-            if "mac" in systemType:
-                subprocess.call(["open", file])
-            else:
-                os.startfile(file)
+            open_folder_func(os.path.split(save_path)[0])
             success_msg = "Export averaged results sucessfully."
             self.logger.info(success_msg)
             self.update_message(success_msg)
