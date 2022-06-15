@@ -10,7 +10,7 @@
 1. Optimize the result panel fluency.
 2. Add multiple tabs in result panel for different protein channel.
 
-## Next Version
+## Version v2.4
 1.  Save ROI file of a single mini-stack.
 2.  Save ROI file of whole mini-stacks.
 3.  In subtraction panel, draw a region to subtract. 
