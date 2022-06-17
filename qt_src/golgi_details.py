@@ -181,6 +181,11 @@ class GolgiDetailWidget(QWidget):
                         shifted_golgi = shift_make_border(normalized_golgi, giantin_channel=self.giantin_channel,
                                                           border_size=(target_size, target_size),
                                                           center_coord=centroid, shift_to_imageJ=True)
+                        if shifted_golgi is None:
+                            rej_msg = "The gyradius based resized image is larger than 701x701, " \
+                                      "and signals appear at the edge of the image that can not be cropped."
+                            self.logger.info(rej_msg)
+                            break
                         self.new_shifted_golgi = shifted_golgi
                         self.new_crop_golgi = golgi
                         self.new_giantin_mask = mask

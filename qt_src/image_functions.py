@@ -671,7 +671,21 @@ def shift_make_border(image, giantin_channel, border_size=(701, 701), center_coo
     """
     assert len(image.shape) == 3, "Dimension of image shape is not 3."
     h, w, c = image.shape
-    pad_image = np.pad(image, ((0, border_size[0] - w), (0, border_size[1] - h), (0, 0)))
+    if h > border_size[1]:
+        diff = h - border_size[1]
+        diff_per_side = diff // 2
+        if np.sum(image[0:diff_per_side, :, :]) + np.sum(image[:, 0:diff_per_side, :]) + \
+                np.sum(image[-1 - diff_per_side:-1, :, :]) + np.sum(image[:, -1 - diff_per_side:-1, :]) > 0:
+            return None
+        slice_img = image[diff_per_side:h - diff_per_side, diff_per_side:w - diff_per_side, :]
+        diff_per_side_extra = diff % 2
+        if diff_per_side_extra > 0:
+            if np.sum(slice_img[-2:-1, :, :]) + np.sum(slice_img[:, -2:-1, :]) > 0:
+                return None
+            slice_img = slice_img[0:-2, 0:-2, :]
+        pad_image = slice_img
+    else:
+        pad_image = np.pad(image, ((0, border_size[0] - w), (0, border_size[1] - h), (0, 0)))
     channel_mask = pad_image[:, :, giantin_channel] / (pad_image[:, :, giantin_channel] + 1) * 255
     channel_mask = channel_mask.astype(np.uint8)
     _, channel_mask = cv2.threshold(channel_mask, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
