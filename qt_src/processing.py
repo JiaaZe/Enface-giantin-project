@@ -213,6 +213,8 @@ class Progress(QObject):
                         shifted_golgi = shift_make_border(normalized_golgi, giantin_channel=self.param_giantin_channel,
                                                           border_size=(target_size, target_size),
                                                           center_coord=centroid, shift_to_imageJ=True)
+                        if shifted_golgi is None:
+                            break
                         selected_golgi_list.append(crop_golgi)
                         shifted_golgi_list.append(shifted_golgi)
                         giantin_mask_list.append(giantin_mask)
